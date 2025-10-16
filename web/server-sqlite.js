@@ -660,6 +660,27 @@ app.post('/api/natural-query', async (req, res) => {
   }
 });
 
+// API de diagnóstico de configuración
+app.get('/api/debug-config', (req, res) => {
+  try {
+    const config = {
+      gemini_api_key_present: !!process.env.GEMINI_API_KEY,
+      gemini_api_key_length: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
+      gemini_model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      node_env: process.env.NODE_ENV,
+      railway_environment: process.env.RAILWAY_ENVIRONMENT,
+      ai_configured: aiGeminiService.isConfigured(),
+      all_env_vars: Object.keys(process.env).filter(key => key.includes('GEMINI') || key.includes('RAILWAY') || key.includes('NODE'))
+    };
+    
+    console.log('🔍 Diagnóstico de configuración:', config);
+    res.json({ success: true, config });
+  } catch (error) {
+    console.error('Error en diagnóstico:', error);
+    res.status(500).json({ success: false, message: 'Error en diagnóstico' });
+  }
+});
+
 // API de productos (para debugging)
 app.get('/api/products', async (req, res) => {
   try {
