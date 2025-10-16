@@ -880,7 +880,8 @@ app.post('/api/stats', async (req, res) => {
         const placeholders = storeIds.map((_, i) => `${paramPlaceholder}${i + 3}`).join(',');
         const storeIdCondition = isPostgres ? `so.store_id::text IN (${placeholders})` : `so.store_id IN (${placeholders})`;
         query += ` AND ${storeIdCondition}`;
-        params.push(...storeIds);
+        // Asegurar que los storeIds sean strings para PostgreSQL
+        params.push(...storeIds.map(id => String(id)));
       }
     }
 
@@ -945,9 +946,11 @@ app.get('/api/top-products', async (req, res) => {
       const storeIds = Array.isArray(storeId) ? storeId : [storeId];
       if (storeIds.length > 0) {
         const placeholders = storeIds.map((_, i) => `${paramPlaceholder}${i + 3}`).join(',');
+        // Para PostgreSQL, convertir store_id a text para comparar con los parámetros
         const storeIdCondition = isPostgres ? `sp.store_id::text IN (${placeholders})` : `sp.store_id IN (${placeholders})`;
         query += ` AND ${storeIdCondition}`;
-        params.push(...storeIds);
+        // Asegurar que los storeIds sean strings para PostgreSQL
+        params.push(...storeIds.map(id => String(id)));
       }
     }
     
