@@ -152,23 +152,27 @@ class MultiStoreSyncService {
       const userData = await api.authenticate();
       console.log(`✅ Autenticado: ${userData.email}`);
 
-          // Obtener sesiones
-          const sessions = await api.getSessions(fromDate, toDate);
-          console.log(`📊 ${sessions.length} sesiones encontradas`);
-          console.log(`📋 Datos de sesiones:`, JSON.stringify(sessions, null, 2));
+      // Obtener órdenes de venta directamente
+      const orders = await api.getSaleOrders(fromDate, toDate);
+      console.log(`📊 ${orders.length} órdenes encontradas`);
+      console.log(`📋 Datos de órdenes:`, JSON.stringify(orders, null, 2));
 
-      // Procesar cada sesión
-      for (const session of sessions) {
+      // Obtener productos de venta
+      const products = await api.getSaleProducts(fromDate, toDate);
+      console.log(`📦 ${products.length} productos encontrados`);
+
+      // Procesar cada orden
+      for (const order of orders) {
         try {
           // Insertar orden
-          const orderId = `${storeConfig.store_id}_${session.idSession}`;
+          const orderId = `${storeConfig.store_id}_${order.idSaleOrder}`;
           console.log(`  📝 Insertando orden: ${orderId}`);
           console.log(`  📊 Datos de orden:`, {
             orderId,
             storeId: storeConfig.store_id,
-            checkin: session.checkin,
-            total: session.total_invoiced || 0,
-            discount: session.discount || 0
+            orderDate: order.orderDate,
+            total: order.total || 0,
+            discount: order.discount || 0
           });
           
           let orderResult;
@@ -186,12 +190,12 @@ class MultiStoreSyncService {
             `).run(
               orderId,
               storeConfig.store_id,
-              session.checkin,
-              session.total_invoiced || 0,
-              session.discount || 0,
+              order.orderDate,
+              order.total || 0,
+              order.discount || 0,
               'cash',
-              session.idSession, // id_sale_order
-              session.idSession  // id_session
+              order.idSaleOrder, // id_sale_order
+              order.idSession    // id_session
             );
           } else {
             // SQLite - esquema completo
@@ -203,48 +207,29 @@ class MultiStoreSyncService {
                 discount = EXCLUDED.discount,
                 payment_method = EXCLUDED.payment_method
             `).run(
-              session.idSession,
-              session.shopNumber,
+              order.idSaleOrder,
+              order.shopNumber,
               storeConfig.store_id,
-              session.idSession,
-              session.checkin,
-              session.idSession,
+              order.idSaleOrder,
+              order.orderDate,
+              order.idSession,
               'cash',
-              session.total_invoiced || 0,
-              session.discount || 0
+              order.total || 0,
+              order.discount || 0
             );
           }
           console.log(`  ✅ Orden insertada:`, orderResult);
 
-          // Obtener órdenes de la sesión y luego sus productos
-          console.log(`  📦 Obteniendo órdenes para sesión ${session.idSession}...`);
-          
-          // Obtener todas las órdenes del período
-          const allOrders = await api.getSaleOrders(fromDate, toDate);
-          console.log(`  📊 Total de órdenes en período: ${allOrders.length}`);
-          
-          // Filtrar órdenes por sesión
-          const sessionOrders = allOrders.filter(order => order.idSession === session.idSession);
-          console.log(`  📦 ${sessionOrders.length} órdenes encontradas para sesión ${session.idSession}`);
-          
-          // Obtener productos de todas las órdenes de la sesión
-          const allProducts = await api.getSaleProducts(fromDate, toDate);
-          const sessionOrderIds = sessionOrders.map(order => order.idSaleOrder);
-          const products = allProducts.filter(product => sessionOrderIds.includes(product.idSaleOrder));
-          console.log(`  📦 ${products.length} productos encontrados para sesión ${session.idSession}`);
-          
-          // Crear un mapeo de idSaleOrder a orderId para usar en la inserción
-          const orderIdMap = {};
-          sessionOrders.forEach(order => {
-            orderIdMap[order.idSaleOrder] = `${storeConfig.store_id}_${order.idSaleOrder}`;
-          });
+          // Filtrar productos de esta orden
+          const orderProducts = products.filter(product => product.idSaleOrder === order.idSaleOrder);
+          console.log(`  📦 ${orderProducts.length} productos encontrados para orden ${order.idSaleOrder}`);
           
           // Insertar productos
-          for (const product of products) {
+          for (const product of orderProducts) {
             try {
               console.log(`    📦 Insertando producto: ${product.name}`);
-              // Usar el orderId correcto basado en el idSaleOrder del producto
-              const productOrderId = orderIdMap[product.idSaleOrder] || orderId;
+              // Usar el orderId de la orden actual
+              const productOrderId = orderId;
               
               console.log(`    📊 Datos de producto:`, {
                 orderId: productOrderId,
@@ -264,7 +249,7 @@ class MultiStoreSyncService {
                     quantity = EXCLUDED.quantity,
                     sale_price = EXCLUDED.sale_price
                 `                ).run(
-                  productOrderId,
+                  orderId,
                   storeConfig.store_id,
                   product.name || 'Producto sin nombre',
                   product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
@@ -281,7 +266,7 @@ class MultiStoreSyncService {
                     sale_price = EXCLUDED.sale_price
                 `                ).run(
                   product.idSaleProduct || Date.now() + Math.random(), // ID único si no existe
-                  session.shopNumber,
+                  order.shopNumber,
                   storeConfig.store_id,
                   product.idSaleProduct || Date.now() + Math.random(),
                   product.idSaleOrder, // Usar el idSaleOrder real del producto
@@ -298,9 +283,9 @@ class MultiStoreSyncService {
             }
           }
 
-          recordsProcessed += products.length;
+          recordsProcessed += orderProducts.length;
         } catch (error) {
-          console.warn(`⚠️ Error procesando sesión ${session.idSession}:`, error.message);
+          console.warn(`⚠️ Error procesando orden ${order.idSaleOrder}:`, error.message);
         }
       }
 
