@@ -7,6 +7,9 @@ import { db as sqliteDb } from '../config/database.js';
 import aiGeminiService from '../services/aiGeminiService.js';
 import MultiStoreSyncService from '../services/multiStoreSyncService-clean.js';
 
+// Configurar entorno para Railway
+import '../scripts/configure-railway-env.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,6 +19,12 @@ const PORT = process.env.PORT || 3000;
 // Determinar qué base de datos usar
 const isProduction = process.env.NODE_ENV === 'production';
 const dbToUse = isProduction ? postgresDb : sqliteDb; // Usar PostgreSQL en producción, SQLite en desarrollo
+
+console.log('🔍 Configuración de servidor:');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- Es producción:', isProduction);
+console.log('- Base de datos:', isProduction ? 'PostgreSQL' : 'SQLite');
+console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Configurada' : 'No configurada');
 
 // Inicializar base de datos PostgreSQL en producción
 let dbReady = false;
