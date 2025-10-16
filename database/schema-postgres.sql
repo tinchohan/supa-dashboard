@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS sale_orders (
     total DECIMAL(10,2) NOT NULL,
     discount DECIMAL(10,2) DEFAULT 0,
     payment_method TEXT,
+    id_sale_order INTEGER,
+    id_session INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (store_id) REFERENCES stores(store_id)
 );
