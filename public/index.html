@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Linisco - SQLite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .title {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        .status {
+            background: #e8f5e8;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .status-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .status-text {
+            color: #2e7d32;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .feature-title {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .feature-desc {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .info-title {
+            color: #1976d2;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .info-text {
+            color: #424242;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚀</div>
+        <h1 class="title">Dashboard Linisco</h1>
+        <p class="subtitle">Sistema de Sincronización con SQLite</p>
+        
+        <div class="status">
+            <div class="status-icon">✅</div>
+            <div class="status-text">Servidor SQLite Activo</div>
+        </div>
+        
+        <div class="info">
+            <div class="info-title">🎯 Configuración Actual</div>
+            <div class="info-text">
+                <strong>Base de Datos:</strong> SQLite (Simplificado)<br>
+                <strong>Entorno:</strong> Railway Production<br>
+                <strong>Estado:</strong> Funcionando correctamente
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title">📊 Sincronización</div>
+                <div class="feature-desc">Datos de ventas en tiempo real</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">🤖 IA Integrada</div>
+                <div class="feature-desc">Chat y análisis inteligente</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">📈 Gráficos</div>
+                <div class="feature-desc">Visualización de datos</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">🔒 Seguro</div>
+                <div class="feature-desc">Autenticación y seguridad</div>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <a href="/api/sync/status" class="btn">Estado de Sincronización</a>
+            <a href="/api/top-products" class="btn btn-secondary">Productos Top</a>
+        </div>
+        
+        <div class="info">
+            <div class="info-title">🔧 Endpoints Disponibles</div>
+            <div class="info-text">
+                <strong>POST /api/sync</strong> - Sincronizar datos<br>
+                <strong>GET /api/top-products</strong> - Productos más vendidos<br>
+                <strong>POST /api/stats</strong> - Estadísticas<br>
+                <strong>POST /api/chat</strong> - Chat con IA<br>
+                <strong>POST /api/generate-chart</strong> - Generar gráficos
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Verificar estado del servidor
+        fetch('/api/sync/status')
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Servidor SQLite funcionando:', data);
+            })
+            .catch(error => {
+                console.error('❌ Error conectando con el servidor:', error);
+            });
+    </script>
+</body>
+</html>
