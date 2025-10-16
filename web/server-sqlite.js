@@ -701,6 +701,33 @@ app.post('/api/reinit-ai', (req, res) => {
   }
 });
 
+// API de prueba directa de Gemini
+app.post('/api/test-gemini', async (req, res) => {
+  try {
+    console.log('🧪 Probando Gemini directamente...');
+    
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      return res.json({ success: false, message: 'No API key found' });
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const result = await model.generateContent('Responde solo "Hola" en español');
+    const response = await result.response;
+    const text = response.text();
+    
+    console.log('✅ Gemini funcionando:', text);
+    res.json({ success: true, response: text });
+  } catch (error) {
+    console.error('❌ Error probando Gemini:', error);
+    res.status(500).json({ success: false, message: 'Error probando Gemini: ' + error.message });
+  }
+});
+
 // API de productos (para debugging)
 app.get('/api/products', async (req, res) => {
   try {
