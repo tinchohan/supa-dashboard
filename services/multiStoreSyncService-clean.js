@@ -10,13 +10,16 @@ class MultiStoreSyncService {
 
   async syncAllStores(fromDate, toDate) {
     console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
+    console.log(`📊 Tiendas a sincronizar: ${this.stores.length}`);
     
     const results = [];
     const errors = [];
     let totalRecords = 0;
 
     // Inicializar tiendas primero
+    console.log('🔧 Inicializando tiendas...');
     await this.initializeStores();
+    console.log('✅ Tiendas inicializadas');
 
     for (const store of this.stores) {
       try {
@@ -76,9 +79,10 @@ class MultiStoreSyncService {
     let recordsProcessed = 0;
 
     try {
-      console.log(`🔄 Sincronizando ${storeConfig.store_name}...`);
+      console.log(`🔄 Sincronizando ${storeConfig.store_name} (${storeConfig.store_id})...`);
 
       // Autenticar
+      console.log(`🔐 Autenticando con ${storeConfig.email}...`);
       const userData = await api.authenticate();
       console.log(`✅ Autenticado: ${userData.email}`);
 
