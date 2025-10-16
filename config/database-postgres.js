@@ -1,0 +1,99 @@
+import pkg from 'pg';
+const { Pool } = pkg;
+
+// Configuración de PostgreSQL para Railway
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Función para ejecutar queries (compatible con better-sqlite3)
+export const db = {
+  prepare: (query) => {
+    return {
+      all: async (...params) => {
+        const client = await pool.connect();
+        try {
+          const result = await client.query(query, params);
+          return result.rows;
+        } finally {
+          client.release();
+        }
+      },
+      get: async (...params) => {
+        const client = await pool.connect();
+        try {
+          const result = await client.query(query, params);
+          return result.rows[0] || null;
+        } finally {
+          client.release();
+        }
+      },
+      run: async (...params) => {
+        const client = await pool.connect();
+        try {
+          const result = await client.query(query, params);
+          return { changes: result.rowCount || 0 };
+        } finally {
+          client.release();
+        }
+      }
+    };
+  }
+};
+
+// Función para inicializar la base de datos
+export async function initializeDatabase() {
+  const client = await pool.connect();
+  try {
+    // Crear tablas si no existen
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS stores (
+        store_id INTEGER PRIMARY KEY,
+        store_name TEXT NOT NULL,
+        email TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sale_orders (
+        id INTEGER PRIMARY KEY,
+        id_sale_order TEXT UNIQUE NOT NULL,
+        store_id INTEGER NOT NULL,
+        order_date TIMESTAMP NOT NULL,
+        total DECIMAL(10,2) NOT NULL,
+        discount DECIMAL(10,2) DEFAULT 0,
+        payment_method TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (store_id) REFERENCES stores(store_id)
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sale_products (
+        id INTEGER PRIMARY KEY,
+        id_sale_order TEXT NOT NULL,
+        store_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        fixed_name TEXT,
+        quantity INTEGER NOT NULL,
+        sale_price DECIMAL(10,2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (store_id) REFERENCES stores(store_id)
+      );
+    `);
+
+    console.log('✅ Base de datos PostgreSQL inicializada correctamente');
+  } catch (error) {
+    console.error('❌ Error inicializando base de datos:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export default db;

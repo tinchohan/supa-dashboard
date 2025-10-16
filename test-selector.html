@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Selector de Tiendas</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .store-selector { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .store-option { margin: 5px 0; }
+        .store-checkbox-item { margin: 5px 0; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Selector de Tiendas</h1>
+    
+    <div class="store-selector">
+        <div class="store-option">
+            <input type="checkbox" id="allStores" checked>
+            <label for="allStores">Todas las tiendas</label>
+        </div>
+        <div id="storeCheckboxes" class="store-checkboxes">
+            <div class="store-checkbox-item">
+                <input type="checkbox" id="store_1" value="1">
+                <label for="store_1">Subway Corrientes <span class="store-id">1</span></label>
+            </div>
+            <div class="store-checkbox-item">
+                <input type="checkbox" id="store_2" value="2">
+                <label for="store_2">Subway Ortiz <span class="store-id">2</span></label>
+            </div>
+            <div class="store-checkbox-item">
+                <input type="checkbox" id="store_3" value="3">
+                <label for="store_3">Subway Centro <span class="store-id">3</span></label>
+            </div>
+        </div>
+    </div>
+    
+    <button onclick="testSelector()">🧪 Probar Selector</button>
+    
+    <div id="debug" class="debug">
+        <h3>Debug Info:</h3>
+        <div id="debugContent">Haz clic en "Probar Selector" para ver la información de debug</div>
+    </div>
+
+    <script>
+        // Configurar eventos del selector de tiendas
+        function setupStoreSelector() {
+            const allStoresCheckbox = document.getElementById('allStores');
+            const storeCheckboxes = document.querySelectorAll('#storeCheckboxes input[type="checkbox"]');
+            
+            console.log('🔧 Configurando eventos del selector de tiendas...');
+            console.log('• Checkbox "Todas las tiendas":', allStoresCheckbox);
+            console.log('• Tiendas individuales:', storeCheckboxes.length);
+            
+            // Evento para "Todas las tiendas"
+            allStoresCheckbox.addEventListener('change', function() {
+                console.log('📋 Cambio en "Todas las tiendas":', this.checked);
+                if (this.checked) {
+                    // Desmarcar todas las tiendas individuales
+                    storeCheckboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                }
+                updateDebug();
+            });
+            
+            // Eventos para tiendas individuales
+            storeCheckboxes.forEach((checkbox, index) => {
+                checkbox.addEventListener('change', function() {
+                    console.log(`📋 Cambio en tienda ${index + 1}:`, this.checked, this.value);
+                    
+                    // Si se selecciona una tienda individual, desmarcar "Todas las tiendas"
+                    if (this.checked) {
+                        allStoresCheckbox.checked = false;
+                    }
+                    
+                    updateDebug();
+                });
+            });
+            
+            console.log('✅ Eventos del selector configurados correctamente');
+        }
+
+        // Obtener tiendas seleccionadas
+        function getSelectedStores() {
+            const allStoresCheckbox = document.getElementById('allStores');
+            
+            if (allStoresCheckbox.checked) {
+                console.log('🏪 Selección: Todas las tiendas');
+                return null; // null significa todas las tiendas
+            }
+            
+            const selectedStores = [];
+            const storeCheckboxes = document.querySelectorAll('#storeCheckboxes input[type="checkbox"]:checked');
+            
+            storeCheckboxes.forEach(checkbox => {
+                selectedStores.push(checkbox.value);
+            });
+            
+            console.log('🏪 Tiendas seleccionadas:', selectedStores);
+            console.log('🏪 Checkbox "Todas las tiendas" está marcado:', allStoresCheckbox.checked);
+            console.log('🏪 Tiendas individuales marcadas:', selectedStores.length);
+            
+            // Si no hay tiendas individuales seleccionadas, devolver null (todas las tiendas)
+            if (selectedStores.length === 0) {
+                console.log('🏪 No hay tiendas individuales seleccionadas, usando todas las tiendas');
+                return null;
+            }
+            
+            return selectedStores;
+        }
+
+        function updateDebug() {
+            const selectedStores = getSelectedStores();
+            const allStoresCheckbox = document.getElementById('allStores');
+            const storeCheckboxes = document.querySelectorAll('#storeCheckboxes input[type="checkbox"]');
+            
+            let debugInfo = `
+                <strong>Estado del Selector:</strong><br>
+                • "Todas las tiendas" marcado: ${allStoresCheckbox.checked}<br>
+                • Tiendas individuales marcadas: ${Array.from(storeCheckboxes).filter(cb => cb.checked).length}<br>
+                • selectedStores: ${selectedStores ? JSON.stringify(selectedStores) : 'null'}<br>
+                • Tipo de selección: ${selectedStores === null ? 'Todas las tiendas' : selectedStores.length === 1 ? 'Una tienda' : 'Múltiples tiendas'}<br>
+            `;
+            
+            document.getElementById('debugContent').innerHTML = debugInfo;
+        }
+
+        function testSelector() {
+            updateDebug();
+        }
+
+        // Inicializar cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function() {
+            setupStoreSelector();
+            updateDebug();
+        });
+    </script>
+</body>
+</html>
+
