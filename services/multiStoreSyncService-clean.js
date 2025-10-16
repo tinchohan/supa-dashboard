@@ -177,25 +177,21 @@ class MultiStoreSyncService {
           
           let orderResult;
           if (this.isProduction) {
-            // PostgreSQL - esquema actualizado
+            // PostgreSQL - esquema simplificado
             orderResult = await this.dbToUse.prepare(`
-              INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method, id_sale_order, id_session)
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+              INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method)
+              VALUES ($1, $2, $3, $4, $5, $6)
               ON CONFLICT (id) DO UPDATE SET
                 total = EXCLUDED.total,
                 discount = EXCLUDED.discount,
-                payment_method = EXCLUDED.payment_method,
-                id_sale_order = EXCLUDED.id_sale_order,
-                id_session = EXCLUDED.id_session
+                payment_method = EXCLUDED.payment_method
             `).run(
               orderId,
               storeConfig.store_id,
               order.orderDate,
               order.total || 0,
               order.discount || 0,
-              'cash',
-              order.idSaleOrder, // id_sale_order
-              order.idSession    // id_session
+              'cash'
             );
           } else {
             // SQLite - esquema completo
