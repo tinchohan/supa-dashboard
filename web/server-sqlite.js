@@ -411,16 +411,25 @@ app.post('/api/chat', async (req, res) => {
       
       const products = dbToUse.prepare(productsQuery).all(...params);
       
-      // Consultar métodos de pago
+      // Consultar métodos de pago (corregido para distinguir efectivo de otros)
       const paymentQuery = `
         SELECT 
-          payment_method,
+          CASE 
+            WHEN payment_method = 'cash' THEN 'Efectivo'
+            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            ELSE 'Otros'
+          END as payment_category,
           COUNT(*) as count,
           SUM(total) as revenue
         FROM sale_orders 
         WHERE DATE(order_date) BETWEEN ? AND ?
         ${storeId ? 'AND store_id = ?' : ''}
-        GROUP BY payment_method
+        GROUP BY 
+          CASE 
+            WHEN payment_method = 'cash' THEN 'Efectivo'
+            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            ELSE 'Otros'
+          END
         ORDER BY count DESC
       `;
       
@@ -439,7 +448,7 @@ PRODUCTOS MÁS VENDIDOS:
 ${products.map((p, i) => `${i+1}. ${p.name}: ${p.total_quantity} unidades, $${p.total_revenue.toFixed(2)}`).join('\n')}
 
 MÉTODOS DE PAGO:
-${payments.map(p => `- ${p.payment_method}: ${p.count} órdenes, $${p.revenue.toFixed(2)}`).join('\n')}
+${payments.map(p => `- ${p.payment_category}: ${p.count} órdenes, $${p.revenue.toFixed(2)}`).join('\n')}
       `;
       
       console.log('✅ Datos de contexto obtenidos:', contextData.substring(0, 200) + '...');
@@ -534,6 +543,211 @@ app.post('/api/generate-chart', async (req, res) => {
   } catch (error) {
     console.error('Error generando gráfico:', error);
     res.status(500).json({ success: false, message: 'Error generando gráfico' });
+  }
+});
+
+// API de gráficos de IA con datos reales
+app.post('/api/ai/charts', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null, userMessage = '', chartId = 'chartCanvas' } = req.body;
+    
+    console.log('📊 Generando gráfico de IA con datos reales...');
+    
+    // Obtener datos reales de la base de datos
+    let chartData = {};
+    let chartType = 'bar';
+    let chartTitle = 'Análisis de Ventas';
+    
+    try {
+      // Consultar ventas por día
+      const dailySalesQuery = `
+        SELECT 
+          DATE(order_date) as date,
+          COUNT(*) as orders,
+          SUM(total) as revenue
+        FROM sale_orders 
+        WHERE DATE(order_date) BETWEEN ? AND ?
+        ${storeId ? 'AND store_id = ?' : ''}
+        GROUP BY DATE(order_date)
+        ORDER BY date
+      `;
+      
+      const params = storeId ? [fromDate, toDate, storeId] : [fromDate, toDate];
+      const dailySales = dbToUse.prepare(dailySalesQuery).all(...params);
+      
+      // Consultar productos más vendidos
+      const topProductsQuery = `
+        SELECT 
+          sp.name,
+          SUM(sp.quantity) as total_quantity,
+          SUM(sp.sale_price * sp.quantity) as total_revenue
+        FROM sale_products sp
+        JOIN sale_orders so ON sp.id_sale_order = so.id_sale_order
+        WHERE DATE(so.order_date) BETWEEN ? AND ?
+        ${storeId ? 'AND so.store_id = ?' : ''}
+        GROUP BY sp.name
+        ORDER BY total_quantity DESC
+        LIMIT 10
+      `;
+      
+      const topProducts = dbToUse.prepare(topProductsQuery).all(...params);
+      
+      // Consultar métodos de pago (corregido para distinguir efectivo de otros)
+      const paymentQuery = `
+        SELECT 
+          CASE 
+            WHEN payment_method = 'cash' THEN 'Efectivo'
+            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            ELSE 'Otros'
+          END as payment_category,
+          COUNT(*) as count,
+          SUM(total) as revenue
+        FROM sale_orders 
+        WHERE DATE(order_date) BETWEEN ? AND ?
+        ${storeId ? 'AND store_id = ?' : ''}
+        GROUP BY 
+          CASE 
+            WHEN payment_method = 'cash' THEN 'Efectivo'
+            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            ELSE 'Otros'
+          END
+        ORDER BY count DESC
+      `;
+      
+      const payments = dbToUse.prepare(paymentQuery).all(...params);
+      
+      // Consultar ventas por tienda
+      const storeSalesQuery = `
+        SELECT 
+          store_id,
+          COUNT(*) as orders,
+          SUM(total) as revenue
+        FROM sale_orders 
+        WHERE DATE(order_date) BETWEEN ? AND ?
+        GROUP BY store_id
+        ORDER BY revenue DESC
+      `;
+      
+      const storeSales = dbToUse.prepare(storeSalesQuery).all(...params);
+      
+      // Determinar tipo de gráfico basado en el mensaje del usuario
+      if (userMessage.toLowerCase().includes('producto') || userMessage.toLowerCase().includes('productos')) {
+        chartType = 'bar';
+        chartTitle = 'Productos Más Vendidos';
+        chartData = {
+          labels: topProducts.map(p => p.name),
+          datasets: [{
+            label: 'Cantidad Vendida',
+            data: topProducts.map(p => p.total_quantity),
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        };
+      } else if (userMessage.toLowerCase().includes('pago') || userMessage.toLowerCase().includes('efectivo') || userMessage.toLowerCase().includes('tarjeta')) {
+        chartType = 'doughnut';
+        chartTitle = 'Distribución por Medios de Pago';
+        chartData = {
+          labels: payments.map(p => p.payment_category),
+          datasets: [{
+            data: payments.map(p => p.count),
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.6)',
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(255, 205, 86, 0.6)'
+            ],
+            borderColor: [
+              'rgba(255, 99, 132, 1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 205, 86, 1)'
+            ],
+            borderWidth: 1
+          }]
+        };
+      } else if (userMessage.toLowerCase().includes('tienda') || userMessage.toLowerCase().includes('tiendas')) {
+        chartType = 'bar';
+        chartTitle = 'Ventas por Tienda';
+        chartData = {
+          labels: storeSales.map(s => `Tienda ${s.store_id}`),
+          datasets: [{
+            label: 'Ingresos ($)',
+            data: storeSales.map(s => s.revenue),
+            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          }]
+        };
+      } else {
+        // Gráfico por defecto: ventas diarias
+        chartType = 'line';
+        chartTitle = 'Ventas Diarias';
+        chartData = {
+          labels: dailySales.map(d => d.date),
+          datasets: [{
+            label: 'Ingresos ($)',
+            data: dailySales.map(d => d.revenue),
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+          }]
+        };
+      }
+      
+      console.log('✅ Datos de gráfico obtenidos:', chartData);
+    } catch (dbError) {
+      console.warn('⚠️ Error obteniendo datos de gráfico:', dbError);
+      chartData = {
+        labels: ['Sin datos'],
+        datasets: [{
+          label: 'Sin datos',
+          data: [0],
+          backgroundColor: 'rgba(200, 200, 200, 0.6)'
+        }]
+      };
+    }
+
+    // Generar código de gráfico
+    const chartCode = `
+      // Gráfico ${chartType} generado por IA
+      const ctx = document.getElementById('${chartId}').getContext('2d');
+      
+      const config = {
+        type: '${chartType}',
+        data: ${JSON.stringify(chartData, null, 2)},
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: '${chartTitle}'
+            },
+            legend: {
+              display: true,
+              position: 'top'
+            }
+          },
+          scales: ${chartType === 'line' || chartType === 'bar' ? `{
+            y: {
+              beginAtZero: true
+            }
+          }` : '{}'}
+        }
+      };
+      
+      new Chart(ctx, config);
+    `;
+    
+    res.json({ 
+      success: true, 
+      chartCode: chartCode,
+      chartType: chartType,
+      chartTitle: chartTitle,
+      data: chartData,
+      message: 'Gráfico generado exitosamente'
+    });
+  } catch (error) {
+    console.error('❌ Error generando gráfico de IA:', error);
+    res.status(500).json({ success: false, message: 'Error generando gráfico de IA' });
   }
 });
 
