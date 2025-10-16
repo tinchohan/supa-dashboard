@@ -1219,6 +1219,9 @@ app.post('/api/sync', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🌐 Servidor web ejecutándose en http://localhost:${PORT}`);
   console.log(`📊 Dashboard disponible en http://localhost:${PORT}`);
+  // Healthcheck para Railway
+  // Mantener esta línea para forzar redeploys visibles en logs
+  console.log('✅ Server ready (build timestamp): ' + new Date().toISOString());
 });
 
 export default app;
