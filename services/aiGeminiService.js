@@ -11,21 +11,44 @@ class AIGeminiService {
     this.temperature = parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7;
     this.maxTokens = parseInt(process.env.GEMINI_MAX_TOKENS) || 2048;
     
+    console.log('🔍 Configuración de Gemini:');
+    console.log('- API Key presente:', !!this.apiKey);
+    console.log('- API Key length:', this.apiKey ? this.apiKey.length : 0);
+    console.log('- Model:', this.model);
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    
     if (this.apiKey) {
-      this.genAI = new GoogleGenerativeAI(this.apiKey);
-      this.modelInstance = this.genAI.getGenerativeModel({ 
-        model: this.model,
-        generationConfig: {
-          temperature: this.temperature,
-          maxOutputTokens: this.maxTokens,
-        }
-      });
+      try {
+        this.genAI = new GoogleGenerativeAI(this.apiKey);
+        this.modelInstance = this.genAI.getGenerativeModel({ 
+          model: this.model,
+          generationConfig: {
+            temperature: this.temperature,
+            maxOutputTokens: this.maxTokens,
+          }
+        });
+        console.log('✅ Gemini configurado correctamente');
+      } catch (error) {
+        console.error('❌ Error configurando Gemini:', error);
+      }
+    } else {
+      console.log('⚠️ No se encontró GEMINI_API_KEY');
     }
   }
 
   // Verificar si la API está configurada
   isConfigured() {
-    return !!this.apiKey && !!this.modelInstance;
+    const hasApiKey = !!this.apiKey;
+    const hasModel = !!this.modelInstance;
+    const isConfigured = hasApiKey && hasModel;
+    
+    console.log('🔍 Verificando configuración de Gemini:');
+    console.log('- API Key presente:', hasApiKey);
+    console.log('- Model Instance presente:', hasModel);
+    console.log('- Configurado:', isConfigured);
+    
+    return isConfigured;
   }
 
   // Análisis avanzado de ventas con IA
