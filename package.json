@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "start:prod": "NODE_ENV=production node web/server-clean.js",
+    "start:sqlite": "NODE_ENV=production node web/server-sqlite.js",
     "sync": "node sync.js",
     "dev": "node --watch index.js",
     "web": "node web/server.js",
