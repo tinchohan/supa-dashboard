@@ -94,3 +94,6 @@ Thumbs.db
 
 # Railway specific
 .railway/
+
+# Credenciales de autenticación - NO SUBIR A GITHUB
+config/auth-credentials.js

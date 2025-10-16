@@ -49,10 +49,10 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos' });
     }
 
-    // Credenciales únicas para acceder al dashboard
+    // Credenciales únicas para acceder al dashboard (desde variables de entorno)
     const validCredentials = {
-      username: 'admin',
-      password: 'linisco2025'
+      username: process.env.ADMIN_USERNAME || 'admin',
+      password: process.env.ADMIN_PASSWORD || 'linisco2025'
     };
 
     if (username === validCredentials.username && password === validCredentials.password) {
