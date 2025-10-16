@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db as sqliteDb } from '../config/database.js';
 import aiGeminiService from '../services/aiGeminiService.js';
@@ -278,6 +279,111 @@ app.get('/api/products', async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo productos:', error);
     res.status(500).json({ success: false, message: 'Error obteniendo productos' });
+  }
+});
+
+// API para inicializar base de datos
+app.post('/api/init-db', async (req, res) => {
+  try {
+    console.log('🔧 Inicializando base de datos SQLite...');
+    
+    // Crear directorio para la base de datos si no existe
+    const dbDir = '/app/data';
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+      console.log('✅ Directorio /app/data creado');
+    }
+
+    // Crear tablas
+    dbToUse.exec(`
+      CREATE TABLE IF NOT EXISTS stores (
+        store_id TEXT PRIMARY KEY,
+        store_name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        password TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Tabla stores creada');
+
+    dbToUse.exec(`
+      CREATE TABLE IF NOT EXISTS sale_orders (
+        linisco_id INTEGER PRIMARY KEY,
+        shop_number TEXT,
+        store_id TEXT NOT NULL,
+        id_sale_order INTEGER,
+        order_date TIMESTAMP NOT NULL,
+        id_session INTEGER,
+        payment_method TEXT,
+        total DECIMAL(10,2) NOT NULL,
+        discount DECIMAL(10,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (store_id) REFERENCES stores(store_id)
+      )
+    `);
+    console.log('✅ Tabla sale_orders creada');
+
+    dbToUse.exec(`
+      CREATE TABLE IF NOT EXISTS sale_products (
+        linisco_id INTEGER PRIMARY KEY,
+        shop_number TEXT,
+        store_id TEXT NOT NULL,
+        id_sale_product INTEGER,
+        id_sale_order INTEGER,
+        name TEXT NOT NULL,
+        fixed_name TEXT,
+        quantity INTEGER NOT NULL,
+        sale_price DECIMAL(10,2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (store_id) REFERENCES stores(store_id),
+        FOREIGN KEY (id_sale_order) REFERENCES sale_orders(linisco_id)
+      )
+    `);
+    console.log('✅ Tabla sale_products creada');
+
+    // Crear índices
+    dbToUse.exec(`
+      CREATE INDEX IF NOT EXISTS idx_sale_orders_date ON sale_orders(order_date);
+      CREATE INDEX IF NOT EXISTS idx_sale_orders_store ON sale_orders(store_id);
+      CREATE INDEX IF NOT EXISTS idx_sale_products_order ON sale_products(id_sale_order);
+      CREATE INDEX IF NOT EXISTS idx_sale_products_store ON sale_products(store_id);
+    `);
+    console.log('✅ Índices creados');
+
+    // Insertar tiendas
+    const stores = [
+      { id: '63953', name: 'Subway Lacroze', email: '63953@linisco.com.ar', password: '63953hansen' },
+      { id: '66220', name: 'Subway Corrientes', email: '66220@linisco.com.ar', password: '66220hansen' },
+      { id: '72267', name: 'Subway Ortiz', email: '72267@linisco.com.ar', password: '72267hansen' },
+      { id: '30036', name: 'Daniel Lacroze', email: '30036@linisco.com.ar', password: '30036hansen' },
+      { id: '30038', name: 'Daniel Corrientes', email: '30038@linisco.com.ar', password: '30038hansen' },
+      { id: '10019', name: 'Daniel Ortiz', email: '10019@linisco.com.ar', password: '10019hansen' },
+      { id: '10020', name: 'Seitu Juramento', email: '10020@linisco.com.ar', password: '10020hansen' }
+    ];
+
+    const insertStore = dbToUse.prepare(`
+      INSERT OR REPLACE INTO stores (store_id, store_name, email, password)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    for (const store of stores) {
+      insertStore.run(store.id, store.name, store.email, store.password);
+      console.log(`✅ Tienda insertada: ${store.name}`);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Base de datos SQLite inicializada correctamente',
+      stores: stores.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error inicializando base de datos:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error inicializando base de datos: ' + error.message 
+    });
   }
 });
 
