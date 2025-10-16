@@ -768,6 +768,31 @@ app.post('/api/test-chat', async (req, res) => {
   }
 });
 
+// API de prueba del servicio de IA con datos reales
+app.post('/api/test-ai-service', async (req, res) => {
+  try {
+    const { message = 'Hola, ¿funciona el servicio de IA?', fromDate = '2025-10-15', toDate = '2025-10-15', storeId = null } = req.body;
+    console.log('🧪 Probando servicio de IA con datos reales...');
+    
+    console.log('🔍 Verificando configuración del servicio...');
+    const isConfigured = aiGeminiService.isConfigured();
+    console.log('✅ Servicio configurado:', isConfigured);
+    
+    if (!isConfigured) {
+      return res.json({ success: false, message: 'Servicio de IA no configurado' });
+    }
+    
+    console.log('🤖 Llamando a chatWithContext...');
+    const response = await aiGeminiService.chatWithContext('user', message, fromDate, toDate, storeId);
+    console.log('✅ Respuesta del servicio:', response);
+    
+    res.json({ success: true, response: response.message || response });
+  } catch (error) {
+    console.error('❌ Error probando servicio de IA:', error);
+    res.status(500).json({ success: false, message: 'Error probando servicio: ' + error.message });
+  }
+});
+
 // API de diagnóstico profundo del servicio de IA
 app.get('/api/deep-debug-ai', (req, res) => {
   try {
