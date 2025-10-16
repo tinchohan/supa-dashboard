@@ -9,6 +9,7 @@ import MultiStoreSyncService from '../services/multiStoreSyncService-clean.js';
 
 // Configurar entorno para Railway
 import '../scripts/configure-railway-env.js';
+import '../railway-startup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
