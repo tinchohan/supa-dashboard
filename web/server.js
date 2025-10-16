@@ -25,9 +25,32 @@ if (isProduction) {
     .then(async () => {
       console.log('✅ Base de datos PostgreSQL inicializada correctamente');
       
+      // Esperar un poco para que las tablas se creen completamente
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       // Verificar si hay datos, si no, insertar datos de prueba
       try {
+        console.log('🔍 Verificando si las tablas existen...');
+        
+        // Verificar que la tabla stores existe
+        const tableCheck = await dbToUse.prepare(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'stores'
+          ) as exists
+        `).get();
+        
+        console.log('📊 Tabla stores existe:', tableCheck.exists);
+        
+        if (!tableCheck.exists) {
+          console.log('❌ Tabla stores no existe, esperando...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+        
         const storeCount = await dbToUse.prepare('SELECT COUNT(*) as count FROM stores').get();
+        console.log('📊 Tiendas existentes:', storeCount.count);
+        
         if (storeCount.count === 0) {
           console.log('📊 Base de datos vacía, insertando datos de prueba...');
           
@@ -70,6 +93,7 @@ if (isProduction) {
         }
       } catch (error) {
         console.error('❌ Error insertando datos de prueba:', error.message);
+        console.error('❌ Error completo:', error);
       }
     })
     .catch((error) => {
