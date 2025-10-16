@@ -2841,17 +2841,24 @@
                             await new Promise(r => setTimeout(r, intervalMs));
                             const statusResp = await fetch('/api/sync/status', { headers: { 'Cache-Control': 'no-store' }, cache: 'no-store' });
                             const statusData = await statusResp.json();
-                            if (statusData && statusData.status && statusData.status.state === 'success') {
-                                const summary = statusData.status.summary || {};
-                                const total = summary.totalRecords ?? 0;
-                                showSyncMessage(`✅ Sincronización completada: ${total} registros`, 'success');
-                                await loadData();
-                                return;
-                            }
-                            if (statusData && statusData.status && statusData.status.state === 'error') {
-                                const errMsg = statusData.status.error || 'Error desconocido';
-                                showSyncMessage(`❌ Error en sincronización: ${errMsg}`, 'error');
-                                return;
+                            
+                            if (statusData && statusData.status) {
+                                if (statusData.status.state === 'success') {
+                                    const summary = statusData.status.summary || {};
+                                    const total = summary.totalRecords ?? 0;
+                                    showSyncMessage(`✅ Sincronización completada: ${total} registros`, 'success');
+                                    await loadData();
+                                    return;
+                                }
+                                if (statusData.status.state === 'error') {
+                                    const errMsg = statusData.status.error || 'Error desconocido';
+                                    showSyncMessage(`❌ Error en sincronización: ${errMsg}`, 'error');
+                                    return;
+                                }
+                                if (statusData.status.state === 'idle' && !statusData.syncing) {
+                                    showSyncMessage('⚠️ La sincronización se detuvo inesperadamente.', 'warning');
+                                    return;
+                                }
                             }
                         }
                         showSyncMessage('⚠️ La sincronización está tardando más de lo esperado. Intenta nuevamente.', 'warning');
