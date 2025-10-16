@@ -194,10 +194,10 @@ app.post('/api/stats', async (req, res) => {
         COUNT(DISTINCT s.store_id) as total_stores,
         SUM(so.total - so.discount) as total_revenue,
         AVG(so.total - so.discount) as avg_order_value,
-        COUNT(DISTINCT DATE(so.order_date)) as days_with_sales
+        COUNT(DISTINCT so.order_date::date) as days_with_sales
       FROM sale_orders so
       JOIN stores s ON so.store_id = s.store_id
-      WHERE DATE(so.order_date) BETWEEN $1 AND $2
+      WHERE so.order_date::date BETWEEN $1::date AND $2::date
     `;
     
     const params = [fromDate || '2025-01-01', toDate || '2025-12-31'];
@@ -238,7 +238,7 @@ app.get('/api/top-products', async (req, res) => {
       FROM sale_products sp
       JOIN sale_orders so ON sp.id_sale_order = so.id
       JOIN stores s ON sp.store_id = s.store_id
-      WHERE DATE(so.order_date) BETWEEN $1 AND $2
+      WHERE so.order_date::date BETWEEN $1::date AND $2::date
     `;
     
     const params = [fromDate || '2025-01-01', toDate || '2025-12-31'];
