@@ -10,6 +10,17 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+// Función para convertir queries de SQLite a PostgreSQL
+function convertQuery(query, params) {
+  let convertedQuery = query;
+  let paramIndex = 1;
+  
+  // Reemplazar ? con $1, $2, $3, etc.
+  convertedQuery = convertedQuery.replace(/\?/g, () => `$${paramIndex++}`);
+  
+  return { query: convertedQuery, params };
+}
+
 // Función para ejecutar queries (compatible con better-sqlite3)
 export const db = {
   prepare: (query) => {
@@ -17,7 +28,8 @@ export const db = {
       all: async (...params) => {
         const client = await pool.connect();
         try {
-          const result = await client.query(query, params);
+          const { query: convertedQuery, params: convertedParams } = convertQuery(query, params);
+          const result = await client.query(convertedQuery, convertedParams);
           return result.rows;
         } finally {
           client.release();
@@ -26,7 +38,8 @@ export const db = {
       get: async (...params) => {
         const client = await pool.connect();
         try {
-          const result = await client.query(query, params);
+          const { query: convertedQuery, params: convertedParams } = convertQuery(query, params);
+          const result = await client.query(convertedQuery, convertedParams);
           return result.rows[0] || null;
         } finally {
           client.release();
@@ -35,7 +48,8 @@ export const db = {
       run: async (...params) => {
         const client = await pool.connect();
         try {
-          const result = await client.query(query, params);
+          const { query: convertedQuery, params: convertedParams } = convertQuery(query, params);
+          const result = await client.query(convertedQuery, convertedParams);
           return { changes: result.rowCount || 0 };
         } finally {
           client.release();
