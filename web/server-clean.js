@@ -204,7 +204,7 @@ app.post('/api/stats', async (req, res) => {
     
     if (storeId && storeId.length > 0) {
       const placeholders = storeId.map((_, i) => `$${i + 3}`).join(',');
-      query += ` AND so.store_id IN (${placeholders})`;
+      query += ` AND so.store_id::text IN (${placeholders})`;
       params.push(...storeId);
     }
 
@@ -245,7 +245,7 @@ app.get('/api/top-products', async (req, res) => {
     
     if (storeId && storeId.length > 0) {
       const placeholders = storeId.map((_, i) => `$${i + 3}`).join(',');
-      query += ` AND sp.store_id IN (${placeholders})`;
+      query += ` AND sp.store_id::text IN (${placeholders})`;
       params.push(...storeId);
     }
     

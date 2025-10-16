@@ -95,6 +95,7 @@ class MultiStoreSyncService {
         try {
           // Insertar orden
           const orderId = `${storeConfig.store_id}_${session.idSession}`;
+          console.log(`  📝 Insertando orden: ${orderId}`);
           await db.prepare(`
             INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method)
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -113,23 +114,28 @@ class MultiStoreSyncService {
 
           // Obtener productos de la sesión
           const products = await api.getSessionProducts(session.idSession);
+          console.log(`  📦 ${products.length} productos encontrados para sesión ${session.idSession}`);
           
           // Insertar productos
           for (const product of products) {
-            await db.prepare(`
-              INSERT INTO sale_products (id_sale_order, store_id, name, fixed_name, quantity, sale_price)
-              VALUES ($1, $2, $3, $4, $5, $6)
-              ON CONFLICT (id_sale_order, store_id, name) DO UPDATE SET
-                quantity = EXCLUDED.quantity,
-                sale_price = EXCLUDED.sale_price
-            `).run(
-              orderId,
-              storeConfig.store_id,
-              product.name || 'Producto sin nombre',
-              product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
-              product.quantity || 1,
-              product.price || 0
-            );
+            try {
+              await db.prepare(`
+                INSERT INTO sale_products (id_sale_order, store_id, name, fixed_name, quantity, sale_price)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (id_sale_order, store_id, name) DO UPDATE SET
+                  quantity = EXCLUDED.quantity,
+                  sale_price = EXCLUDED.sale_price
+              `).run(
+                orderId,
+                storeConfig.store_id,
+                product.name || 'Producto sin nombre',
+                product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
+                product.quantity || 1,
+                product.price || 0
+              );
+            } catch (productError) {
+              console.warn(`    ⚠️ Error insertando producto ${product.name}:`, productError.message);
+            }
           }
 
           recordsProcessed += products.length;
