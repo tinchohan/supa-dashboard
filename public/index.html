@@ -1692,17 +1692,16 @@
                 const toDate = document.getElementById('toDate').value;
                 const selectedStores = getSelectedStores();
                 
-                const response = await fetch('/api/ai/chat', {
+                const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        query: message,
+                        message: message,
                         fromDate: fromDate,
                         toDate: toDate,
-                        storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null,
-                        userId: 'default'
+                        storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null
                     })
                 });
                 
@@ -1827,24 +1826,24 @@
                                 createSimpleChart(extractedType, null, realData);
                                 
                                 // Agregar mensaje de texto DESPUÉS del gráfico
-                                addChatMessage(data.data.message, 'ai');
+                                addChatMessage(data.response, 'ai');
                             } else {
                                 console.log('❌ No se pudo generar el gráfico, usando función simple...');
                                 // Fallback: crear gráfico simple
                                 createSimpleChart('bar');
                                 
                                 // Agregar mensaje de texto de la IA
-                                addChatMessage(data.data.message, 'ai');
+                                addChatMessage(data.response, 'ai');
                             }
                         } catch (e) {
                             console.warn('Error generando gráficos:', e);
                             addChatMessage('Error al generar el gráfico. Intenta de nuevo.', 'ai');
                             // Agregar mensaje de texto de la IA de todas formas
-                            addChatMessage(data.data.message, 'ai');
+                            addChatMessage(data.response, 'ai');
                         }
                     } else {
                         // Si no pidió gráficos, agregar el mensaje de texto normalmente
-                        addChatMessage(data.data.message, 'ai');
+                        addChatMessage(data.response, 'ai');
                     }
 
                     // Intento adicional: NL->SQL si el usuario pidi 13 datos/tablas
