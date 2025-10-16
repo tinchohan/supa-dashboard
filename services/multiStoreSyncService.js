@@ -1,3 +1,4 @@
+import { db as sqliteDb, initializeDatabase } from '../config/database-postgres.js';
 import { db } from '../config/database.js';
 import LiniscoAPI from '../config/linisco.js';
 import StoreManager from '../config/stores.js';
@@ -8,36 +9,51 @@ class MultiStoreSyncService {
   constructor() {
     this.storeManager = new StoreManager();
     this.stores = this.storeManager.getStores();
+    
+    // Determinar qué base de datos usar
+    this.isProduction = process.env.NODE_ENV === 'production';
+    this.dbToUse = this.isProduction ? sqliteDb : db;
+    
     this.initializeDatabase();
     this.initializeStores();
   }
 
-  initializeDatabase() {
+  async initializeDatabase() {
     try {
-      // Deshabilitar temporalmente las restricciones de clave foránea
-      db.pragma('foreign_keys = OFF');
-      
-      // Leer y ejecutar el esquema SQL
-      const schemaPath = path.join(process.cwd(), 'database', 'schema.sql');
-      const schema = fs.readFileSync(schemaPath, 'utf8');
-      
-      // Dividir el esquema en declaraciones individuales
-      const statements = schema
-        .split(';')
-        .map(stmt => stmt.trim())
-        .filter(stmt => stmt.length > 0);
+      if (this.isProduction) {
+        // En producción, usar PostgreSQL
+        console.log('🔧 Inicializando PostgreSQL para sincronización...');
+        await initializeDatabase();
+        console.log('✅ PostgreSQL inicializado para sincronización');
+      } else {
+        // En desarrollo, usar SQLite
+        console.log('🔧 Inicializando SQLite para sincronización...');
+        
+        // Deshabilitar temporalmente las restricciones de clave foránea
+        this.dbToUse.pragma('foreign_keys = OFF');
+        
+        // Leer y ejecutar el esquema SQL
+        const schemaPath = path.join(process.cwd(), 'database', 'schema.sql');
+        const schema = fs.readFileSync(schemaPath, 'utf8');
+        
+        // Dividir el esquema en declaraciones individuales
+        const statements = schema
+          .split(';')
+          .map(stmt => stmt.trim())
+          .filter(stmt => stmt.length > 0);
 
-      // Ejecutar cada declaración
-      statements.forEach(statement => {
-        if (statement.trim()) {
-          db.exec(statement);
-        }
-      });
+        // Ejecutar cada declaración
+        statements.forEach(statement => {
+          if (statement.trim()) {
+            this.dbToUse.exec(statement);
+          }
+        });
 
-      // Rehabilitar las restricciones de clave foránea
-      db.pragma('foreign_keys = ON');
+        // Rehabilitar las restricciones de clave foránea
+        this.dbToUse.pragma('foreign_keys = ON');
 
-      console.log('✅ Base de datos inicializada correctamente');
+        console.log('✅ SQLite inicializado para sincronización');
+      }
     } catch (error) {
       console.error('❌ Error inicializando base de datos:', error.message);
       throw error;
@@ -46,7 +62,7 @@ class MultiStoreSyncService {
 
   initializeStores() {
     try {
-      const insertStore = db.prepare(`
+      const insertStore = this.dbToUse.prepare(`
         INSERT OR REPLACE INTO stores (store_id, store_name, email, is_active, updated_at)
         VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
       `);
@@ -70,13 +86,13 @@ class MultiStoreSyncService {
       console.log(`🔄 Sincronizando ${storeConfig.store_name} (${storeConfig.store_id})...`);
 
       // Deshabilitar restricciones de clave foránea temporalmente
-      db.pragma('foreign_keys = OFF');
+      this.dbToUse.pragma('foreign_keys = OFF');
 
       // Autenticar
       const userData = await api.authenticate();
       
       // Guardar usuario en la base de datos (evitar duplicados)
-      const insertUser = db.prepare(`
+      const insertUser = this.dbToUse.prepare(`
         INSERT OR IGNORE INTO users (
           linisco_id, email, store_id, created_at, updated_at, 
           authentication_token, roles_mask, brand_id, synced_at
@@ -101,7 +117,7 @@ class MultiStoreSyncService {
       const sessions = await api.getSessions(fromDate, toDate);
       console.log(`   📊 ${sessions.length} sesiones encontradas`);
       
-      const insertSession = db.prepare(`
+      const insertSession = this.dbToUse.prepare(`
         INSERT OR IGNORE INTO sessions (
           linisco_id, shop_number, store_id, user_id, username, checkin, checkout,
           initial_cash, cash, cd_visa, cc_maestro, cc_amex, cc_cabal,
@@ -151,7 +167,7 @@ class MultiStoreSyncService {
       const orders = await api.getSaleOrders(fromDate, toDate);
       console.log(`   📊 ${orders.length} órdenes encontradas`);
       
-      const insertOrder = db.prepare(`
+      const insertOrder = this.dbToUse.prepare(`
         INSERT OR IGNORE INTO sale_orders (
           linisco_id, shop_number, store_id, id_sale_order, id_customer, number,
           order_date, id_session, payment_method, total, discount, synced_at
@@ -185,7 +201,7 @@ class MultiStoreSyncService {
       const products = await api.getSaleProducts(fromDate, toDate);
       console.log(`   📊 ${products.length} productos encontrados`);
       
-      const insertProduct = db.prepare(`
+      const insertProduct = this.dbToUse.prepare(`
         INSERT OR IGNORE INTO sale_products (
           linisco_id, shop_number, store_id, id_sale_product, id_sale_order,
           id_product, id_control_sheet_def, name, fixed_name,
@@ -225,7 +241,7 @@ class MultiStoreSyncService {
       return { success: false, store: storeConfig.store_name, error: error.message };
     } finally {
       // Rehabilitar restricciones de clave foránea
-      db.pragma('foreign_keys = ON');
+      this.dbToUse.pragma('foreign_keys = ON');
     }
   }
 
@@ -270,7 +286,7 @@ class MultiStoreSyncService {
       }
 
       // Registrar log de sincronización
-      const insertSyncLog = db.prepare(`
+      const insertSyncLog = this.dbToUse.prepare(`
         INSERT INTO sync_log (sync_type, start_date, end_date, status, records_synced, started_at, completed_at)
         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
@@ -325,7 +341,7 @@ class MultiStoreSyncService {
 
   // Métodos para consultar datos por tienda
   getStoresSummary(fromDate, toDate) {
-    const stmt = db.prepare(`
+    const stmt = this.dbToUse.prepare(`
       SELECT 
         s.store_id,
         s.store_name,
@@ -345,7 +361,7 @@ class MultiStoreSyncService {
   }
 
   getStoreSales(storeId, fromDate, toDate) {
-    const stmt = db.prepare(`
+    const stmt = this.dbToUse.prepare(`
       SELECT 
         COUNT(DISTINCT so.id) as total_orders,
         COUNT(DISTINCT sp.id) as total_products,
@@ -388,12 +404,12 @@ class MultiStoreSyncService {
     
     params.push(limit);
     
-    const stmt = db.prepare(query);
+    const stmt = this.dbToUse.prepare(query);
     return stmt.all(...params);
   }
 
   close() {
-    db.close();
+    this.dbToUse.close();
   }
 }
 
