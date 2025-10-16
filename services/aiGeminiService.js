@@ -87,22 +87,27 @@ class AIGeminiService {
 
   // Análisis avanzado de ventas con IA
   async analyzeSalesWithAI(fromDate, toDate, storeId = null) {
-    // Verificación directa sin usar isConfigured()
-    const hasApiKey = !!process.env.GEMINI_API_KEY;
-    const hasModel = !!this.modelInstance;
-    const isConfigured = hasApiKey && hasModel;
+    console.log('🔍 Creando nueva instancia de Gemini en analyzeSalesWithAI...');
     
-    console.log('🔍 Verificación directa en analyzeSalesWithAI:');
-    console.log('- API Key presente:', hasApiKey);
-    console.log('- Model Instance presente:', hasModel);
-    console.log('- Configurado:', isConfigured);
-    
-    if (!isConfigured) {
-      console.log('⚠️ Usando modo fallback en analyzeSalesWithAI');
+    // Crear nueva instancia de Gemini en cada llamada
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.log('⚠️ No API key found, usando modo fallback');
       return this.getFallbackAnalysis(fromDate, toDate, storeId);
     }
-
+    
     try {
+      console.log('🔄 Creando nueva instancia de Gemini...');
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: this.model,
+        generationConfig: {
+          temperature: this.temperature,
+          maxOutputTokens: this.maxTokens,
+        }
+      });
+      console.log('✅ Nueva instancia de Gemini creada exitosamente');
+
       // Obtener datos de ventas
       const salesData = await this.getSalesData(fromDate, toDate, storeId);
       
@@ -131,10 +136,12 @@ class AIGeminiService {
         Responde en español, de forma clara y accionable.
       `;
 
-      const result = await this.modelInstance.generateContent(prompt);
+      console.log('🤖 Enviando prompt de análisis a Gemini...');
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
+      console.log('✅ Análisis de Gemini recibido:', text.substring(0, 100) + '...');
       return {
         success: true,
         analysis: text,
@@ -143,31 +150,35 @@ class AIGeminiService {
       };
 
     } catch (error) {
-      console.error('Error en análisis con Gemini:', error);
+      console.error('❌ Error en análisis con Gemini:', error);
+      console.log('⚠️ Usando modo fallback debido a error');
       return this.getFallbackAnalysis(fromDate, toDate, storeId);
     }
   }
 
   // Chat inteligente con contexto de datos
   async chatWithContext(userId, message, fromDate, toDate, storeId = null) {
-    console.log('🔍 Verificando configuración en chatWithContext...');
+    console.log('🔍 Creando nueva instancia de Gemini en chatWithContext...');
     
-    // Verificación directa sin usar isConfigured()
-    const hasApiKey = !!process.env.GEMINI_API_KEY;
-    const hasModel = !!this.modelInstance;
-    const isConfigured = hasApiKey && hasModel;
-    
-    console.log('✅ Verificación directa:');
-    console.log('- API Key presente:', hasApiKey);
-    console.log('- Model Instance presente:', hasModel);
-    console.log('- Configurado:', isConfigured);
-    
-    if (!isConfigured) {
-      console.log('⚠️ Usando modo fallback en chatWithContext');
+    // Crear nueva instancia de Gemini en cada llamada
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.log('⚠️ No API key found, usando modo fallback');
       return this.getFallbackChatResponse(message);
     }
-
+    
     try {
+      console.log('🔄 Creando nueva instancia de Gemini...');
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: this.model,
+        generationConfig: {
+          temperature: this.temperature,
+          maxOutputTokens: this.maxTokens,
+        }
+      });
+      console.log('✅ Nueva instancia de Gemini creada exitosamente');
+
       // 1) Recolectar contexto rico para el período y tienda
       const snapshot = await this.getContextSnapshot(fromDate, toDate, storeId);
 
@@ -206,10 +217,12 @@ class AIGeminiService {
 `- Sé específico, con números comparativos y conclusiones prácticas.\n`+
 `- Si la pregunta es ambigua, pide una aclaración concreta.\n`;
 
-      const result = await this.modelInstance.generateContent(prompt);
+      console.log('🤖 Enviando prompt a Gemini...');
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
+      console.log('✅ Respuesta de Gemini recibida:', text.substring(0, 100) + '...');
       return {
         success: true,
         message: text,
@@ -217,11 +230,12 @@ class AIGeminiService {
       };
 
     } catch (error) {
-      console.error('Error en chat con Gemini:', error);
+      console.error('❌ Error en chat con Gemini:', error);
       if (error.status === 503 || (error.message || '').includes('overloaded')) {
         console.log('🔄 Modelo sobrecargado, intentando con modelo alternativo...');
         return await this.tryAlternativeModel(message, fromDate, toDate, storeId);
       }
+      console.log('⚠️ Usando modo fallback debido a error');
       return this.getFallbackChatResponse(message);
     }
   }
@@ -623,3 +637,4 @@ class AIGeminiService {
 }
 
 export default new AIGeminiService();
+
