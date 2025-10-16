@@ -1,4 +1,5 @@
-import { db } from '../config/database-postgres-clean.js';
+import { db as postgresDb, initializeDatabase } from '../config/database-postgres-clean.js';
+import { db as sqliteDb } from '../config/database.js';
 import LiniscoAPI from '../config/linisco.js';
 import StoreManager from '../config/stores.js';
 
@@ -6,6 +7,10 @@ class MultiStoreSyncService {
   constructor() {
     this.storeManager = new StoreManager();
     this.stores = this.storeManager.getStores();
+    
+    // Determinar qué base de datos usar
+    this.isProduction = process.env.NODE_ENV === 'production';
+    this.dbToUse = this.isProduction ? postgresDb : sqliteDb;
   }
 
   async syncAllStores(fromDate, toDate) {
@@ -48,9 +53,16 @@ class MultiStoreSyncService {
 
   async initializeStores() {
     try {
-      const insertStore = db.prepare(`
+      // Inicializar PostgreSQL si estamos en producción
+      if (this.isProduction) {
+        console.log('🔧 Inicializando PostgreSQL para sincronización...');
+        await initializeDatabase();
+        console.log('✅ PostgreSQL inicializado para sincronización');
+      }
+
+      const insertStore = this.dbToUse.prepare(`
         INSERT INTO stores (store_id, store_name, email, password) 
-        VALUES ($1, $2, $3, $4)
+        VALUES (${this.isProduction ? '$1, $2, $3, $4' : '?, ?, ?, ?'})
         ON CONFLICT (store_id) DO UPDATE SET
           store_name = EXCLUDED.store_name,
           email = EXCLUDED.email,
@@ -97,9 +109,9 @@ class MultiStoreSyncService {
           // Insertar orden
           const orderId = `${storeConfig.store_id}_${session.idSession}`;
           console.log(`  📝 Insertando orden: ${orderId}`);
-          await db.prepare(`
+          await this.dbToUse.prepare(`
             INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES (${this.isProduction ? '$1, $2, $3, $4, $5, $6' : '?, ?, ?, ?, ?, ?'})
             ON CONFLICT (id) DO UPDATE SET
               total = EXCLUDED.total,
               discount = EXCLUDED.discount,
@@ -121,9 +133,9 @@ class MultiStoreSyncService {
           // Insertar productos
           for (const product of products) {
             try {
-              await db.prepare(`
+              await this.dbToUse.prepare(`
                 INSERT INTO sale_products (id_sale_order, store_id, name, fixed_name, quantity, sale_price)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                VALUES (${this.isProduction ? '$1, $2, $3, $4, $5, $6' : '?, ?, ?, ?, ?, ?'})
                 ON CONFLICT (id_sale_order, store_id, name) DO UPDATE SET
                   quantity = EXCLUDED.quantity,
                   sale_price = EXCLUDED.sale_price
