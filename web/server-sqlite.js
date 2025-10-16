@@ -743,7 +743,14 @@ app.post('/api/ai/charts', async (req, res) => {
       chartType: chartType,
       chartTitle: chartTitle,
       data: chartData,
-      message: 'Gráfico generado exitosamente'
+      message: 'Gráfico generado exitosamente',
+      // Datos simplificados para el frontend
+      simpleData: {
+        labels: chartData.labels || [],
+        datasets: chartData.datasets || [],
+        type: chartType,
+        title: chartTitle
+      }
     });
   } catch (error) {
     console.error('❌ Error generando gráfico de IA:', error);
