@@ -1097,8 +1097,51 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Servir la página principal
-app.get('/', (req, res) => {
+// Middleware de autenticación
+function requireAuth(req, res, next) {
+  const isAuthenticated = req.headers['x-authenticated'] === 'true';
+  
+  if (isAuthenticated) {
+    next();
+  } else {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  }
+}
+
+// Servir la página de login
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Endpoint para verificar credenciales
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (username === 'H4' && password === 'SRL') {
+    res.json({ 
+      success: true, 
+      message: 'Login exitoso',
+      redirect: '/'
+    });
+  } else {
+    res.status(401).json({ 
+      success: false, 
+      message: 'Credenciales incorrectas' 
+    });
+  }
+});
+
+// Endpoint para logout
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Logout exitoso',
+    redirect: '/login'
+  });
+});
+
+// Servir la página principal (requiere autenticación)
+app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

@@ -33,6 +33,7 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
@@ -43,6 +44,25 @@
         .header p {
             font-size: 1.2em;
             opacity: 0.9;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
         .controls {
@@ -726,6 +746,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
             <h1>🍔 Dashboard Linisco</h1>
             <p>Análisis de Ventas Multi-Tienda</p>
         </div>
@@ -3047,6 +3068,37 @@
                 console.log('❌ No se encontraron datos');
             }
         };
+
+        // Función de logout
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.removeItem('isAuthenticated');
+                    localStorage.removeItem('username');
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error en logout:', error);
+                // Forzar logout local
+                localStorage.removeItem('isAuthenticated');
+                localStorage.removeItem('username');
+                window.location.href = '/login';
+            }
+        }
+
+        // Verificar autenticación al cargar la página
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+            window.location.href = '/login';
+        }
     </script>
 </body>
 </html>
