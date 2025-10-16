@@ -39,14 +39,38 @@ class AIGeminiService {
 
   // Verificar si la API está configurada
   isConfigured() {
-    const hasApiKey = !!this.apiKey;
+    // Verificar configuración en tiempo real
+    const currentApiKey = process.env.GEMINI_API_KEY;
+    const hasApiKey = !!currentApiKey;
     const hasModel = !!this.modelInstance;
     const isConfigured = hasApiKey && hasModel;
     
-    console.log('🔍 Verificando configuración de Gemini:');
+    console.log('🔍 Verificando configuración de Gemini (tiempo real):');
     console.log('- API Key presente:', hasApiKey);
+    console.log('- API Key length:', currentApiKey ? currentApiKey.length : 0);
     console.log('- Model Instance presente:', hasModel);
     console.log('- Configurado:', isConfigured);
+    
+    // Si no está configurado pero hay API key, intentar reconfigurar
+    if (currentApiKey && !this.modelInstance) {
+      console.log('🔄 Reconfigurando Gemini con API key actual...');
+      try {
+        this.apiKey = currentApiKey;
+        this.genAI = new GoogleGenerativeAI(this.apiKey);
+        this.modelInstance = this.genAI.getGenerativeModel({ 
+          model: this.model,
+          generationConfig: {
+            temperature: this.temperature,
+            maxOutputTokens: this.maxTokens,
+          }
+        });
+        console.log('✅ Gemini reconfigurado correctamente');
+        return true;
+      } catch (error) {
+        console.error('❌ Error reconfigurando Gemini:', error);
+        return false;
+      }
+    }
     
     return isConfigured;
   }
