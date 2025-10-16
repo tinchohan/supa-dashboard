@@ -728,6 +728,43 @@ app.post('/api/test-gemini', async (req, res) => {
   }
 });
 
+// API de prueba de chat con nueva instancia (igual que test-gemini)
+app.post('/api/test-chat', async (req, res) => {
+  try {
+    const { message = 'Hola, ¿funciona el chat?' } = req.body;
+    console.log('🧪 Probando chat con nueva instancia de Gemini...');
+    
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      return res.json({ success: false, message: 'No API key found' });
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+      }
+    });
+    
+    const prompt = `Eres un asistente de análisis de datos. Responde de manera útil y profesional en español. Pregunta del usuario: "${message}"`;
+    
+    console.log('🤖 Enviando prompt a Gemini...');
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    console.log('✅ Respuesta de Gemini recibida:', text.substring(0, 100) + '...');
+    res.json({ success: true, response: text });
+  } catch (error) {
+    console.error('❌ Error probando chat con Gemini:', error);
+    res.status(500).json({ success: false, message: 'Error probando chat: ' + error.message });
+  }
+});
+
 // API de diagnóstico profundo del servicio de IA
 app.get('/api/deep-debug-ai', (req, res) => {
   try {
