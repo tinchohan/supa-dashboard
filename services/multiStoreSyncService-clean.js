@@ -86,9 +86,10 @@ class MultiStoreSyncService {
       const userData = await api.authenticate();
       console.log(`✅ Autenticado: ${userData.email}`);
 
-      // Obtener sesiones
-      const sessions = await api.getSessions(fromDate, toDate);
-      console.log(`📊 ${sessions.length} sesiones encontradas`);
+          // Obtener sesiones
+          const sessions = await api.getSessions(fromDate, toDate);
+          console.log(`📊 ${sessions.length} sesiones encontradas`);
+          console.log(`📋 Datos de sesiones:`, JSON.stringify(sessions, null, 2));
 
       // Procesar cada sesión
       for (const session of sessions) {
@@ -115,6 +116,7 @@ class MultiStoreSyncService {
           // Obtener productos de la sesión
           const products = await api.getSessionProducts(session.idSession);
           console.log(`  📦 ${products.length} productos encontrados para sesión ${session.idSession}`);
+          console.log(`  📋 Datos de productos:`, JSON.stringify(products, null, 2));
           
           // Insertar productos
           for (const product of products) {

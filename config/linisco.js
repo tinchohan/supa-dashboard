@@ -123,6 +123,19 @@ class LiniscoAPI {
       throw error;
     }
   }
+
+  async getSessionProducts(sessionId) {
+    try {
+      const response = await axios.get(`${this.baseURL}/psessions/${sessionId}/products`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error(`❌ Error obteniendo productos de sesión ${sessionId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
 }
 
 export default LiniscoAPI;
