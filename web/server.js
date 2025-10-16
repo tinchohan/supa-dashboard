@@ -1229,69 +1229,84 @@ app.get('/test-dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'test-dashboard.html'));
 });
 
-// Variable para controlar sincronizaciones concurrentes
+// Variable para controlar sincronizaciones concurrentes y estado
 let isServerSyncing = false;
+let lastSyncStatus = {
+  state: 'idle', // idle | running | success | error
+  startedAt: null,
+  finishedAt: null,
+  summary: null,
+  error: null
+};
 
 // Endpoint de sincronización
 app.post('/api/sync', async (req, res) => {
   try {
-    // Verificar si ya hay una sincronización en curso
     if (isServerSyncing) {
-      return res.status(429).json({
-        success: false,
-        message: 'Ya hay una sincronización en curso. Espera a que termine.',
-        error: 'SYNC_IN_PROGRESS'
-      });
+      return res.status(429).json({ success: false, message: 'Ya hay una sincronización en curso.', error: 'SYNC_IN_PROGRESS' });
     }
 
-    const { fromDate, toDate, forceSync } = req.body;
-    
-    console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate} (forceSync: ${forceSync})`);
-    
+    const { fromDate, toDate, forceSync } = req.body || {};
+    console.log(`🔄 Dispatch sync ${fromDate || '-'} -> ${toDate || '-'} (force: ${!!forceSync})`);
+
     isServerSyncing = true;
-    
-    // Instanciar servicio de sincronización (import estático)
-    const syncService = new MultiStoreSyncService();
-    
-    // Ejecutar sincronización
-    const result = await syncService.syncAllStores(fromDate, toDate);
-    
-    if (result.success) {
-      console.log(`✅ Sincronización completada: ${result.totalRecords} registros sincronizados`);
-      res.json({
-        success: true,
-        message: `Sincronización completada exitosamente`,
-        data: {
-          totalRecords: result.totalRecords,
-          storesProcessed: result.results.length,
-          errors: result.errors.length,
-          newRecords: result.totalRecords, // Asumiendo que todos son nuevos si no hay duplicados
-          duplicateRecords: 0 // El servicio debería manejar duplicados automáticamente
+    lastSyncStatus = { state: 'running', startedAt: new Date().toISOString(), finishedAt: null, summary: null, error: null };
+
+    // Responder inmediatamente y ejecutar en background
+    res.status(202).json({ success: true, message: 'Sincronización en progreso', status: '/api/sync/status' });
+
+    // Ejecutar tarea en background
+    setImmediate(async () => {
+      try {
+        const syncService = new MultiStoreSyncService();
+        const result = await syncService.syncAllStores(fromDate, toDate);
+        if (result.success) {
+          console.log(`✅ Sincronización completada: ${result.totalRecords} registros`);
+          lastSyncStatus = {
+            state: 'success',
+            startedAt: lastSyncStatus.startedAt,
+            finishedAt: new Date().toISOString(),
+            summary: {
+              totalRecords: result.totalRecords,
+              storesProcessed: result.results.length,
+              errors: result.errors.length,
+              results: result.results
+            },
+            error: null
+          };
+        } else {
+          console.error('❌ Error en sincronización:', result.error);
+          lastSyncStatus = {
+            state: 'error',
+            startedAt: lastSyncStatus.startedAt,
+            finishedAt: new Date().toISOString(),
+            summary: null,
+            error: result.error || 'Unknown error'
+          };
         }
-      });
-    } else {
-      console.log(`⚠️ Sincronización completada con errores: ${result.errors.length} errores`);
-      res.json({
-        success: false,
-        message: `Sincronización completada con ${result.errors.length} errores`,
-        data: {
-          totalRecords: result.totalRecords,
-          storesProcessed: result.results.length,
-          errors: result.errors
-        }
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ Error en sincronización:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno durante la sincronización',
-      error: error.message
+      } catch (error) {
+        console.error('❌ Error inesperado en sync background:', error);
+        lastSyncStatus = {
+          state: 'error',
+          startedAt: lastSyncStatus.startedAt,
+          finishedAt: new Date().toISOString(),
+          summary: null,
+          error: error.message
+        };
+      } finally {
+        isServerSyncing = false;
+      }
     });
-  } finally {
+  } catch (error) {
+    console.error('❌ Error al despachar sincronización:', error);
     isServerSyncing = false;
+    return res.status(500).json({ success: false, message: 'No se pudo iniciar la sincronización', error: error.message });
   }
+});
+
+// Endpoint para consultar estado de sincronización
+app.get('/api/sync/status', (req, res) => {
+  res.json({ success: true, syncing: isServerSyncing, status: lastSyncStatus });
 });
 
 // Iniciar servidor
