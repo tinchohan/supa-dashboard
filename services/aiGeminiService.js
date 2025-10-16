@@ -129,7 +129,12 @@ class AIGeminiService {
 
   // Chat inteligente con contexto de datos
   async chatWithContext(userId, message, fromDate, toDate, storeId = null) {
-    if (!this.isConfigured()) {
+    console.log('🔍 Verificando configuración en chatWithContext...');
+    const isConfigured = this.isConfigured();
+    console.log('✅ Configurado en chatWithContext:', isConfigured);
+    
+    if (!isConfigured) {
+      console.log('⚠️ Usando modo fallback en chatWithContext');
       return this.getFallbackChatResponse(message);
     }
 
