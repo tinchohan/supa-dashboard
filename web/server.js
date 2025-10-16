@@ -1242,6 +1242,7 @@ let lastSyncStatus = {
 // Endpoint de sincronización
 app.post('/api/sync', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store');
     if (isServerSyncing) {
       return res.status(429).json({ success: false, message: 'Ya hay una sincronización en curso.', error: 'SYNC_IN_PROGRESS' });
     }
@@ -1253,6 +1254,7 @@ app.post('/api/sync', async (req, res) => {
     lastSyncStatus = { state: 'running', startedAt: new Date().toISOString(), finishedAt: null, summary: null, error: null };
 
     // Responder inmediatamente y ejecutar en background
+    res.set('Cache-Control', 'no-store');
     res.status(202).json({ success: true, message: 'Sincronización en progreso', status: '/api/sync/status' });
 
     // Ejecutar tarea en background
@@ -1306,6 +1308,7 @@ app.post('/api/sync', async (req, res) => {
 
 // Endpoint para consultar estado de sincronización
 app.get('/api/sync/status', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json({ success: true, syncing: isServerSyncing, status: lastSyncStatus });
 });
 

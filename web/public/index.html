@@ -2827,7 +2827,7 @@
                 // Llamar al endpoint de sincronización (ahora responde 202 y corre en background)
                 const response = await fetch('/api/sync', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
                     body: JSON.stringify({ fromDate, toDate, forceSync: false })
                 });
 
@@ -2839,7 +2839,7 @@
                     const pollStatus = async (maxTries = 120, intervalMs = 2000) => {
                         for (let i = 0; i < maxTries; i++) {
                             await new Promise(r => setTimeout(r, intervalMs));
-                            const statusResp = await fetch('/api/sync/status');
+                            const statusResp = await fetch('/api/sync/status', { headers: { 'Cache-Control': 'no-store' }, cache: 'no-store' });
                             const statusData = await statusResp.json();
                             if (statusData && statusData.status && statusData.status.state === 'success') {
                                 const summary = statusData.status.summary || {};
