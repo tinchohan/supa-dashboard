@@ -31,13 +31,14 @@ if (isProduction) {
         if (storeCount.count === 0) {
           console.log('📊 Base de datos vacía, insertando datos de prueba...');
           
-          // Insertar datos de prueba
+          // Insertar tienda de prueba
           await dbToUse.prepare(`
             INSERT INTO stores (store_id, store_name, email, password) 
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (store_id) DO NOTHING
           `).run('63953', 'Subway Lacroze', '63953@linisco.com.ar', '63953hansen');
           
+          // Insertar órdenes de prueba
           await dbToUse.prepare(`
             INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method) 
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -45,10 +46,23 @@ if (isProduction) {
           `).run('test-001', '63953', '2025-10-15', 1500, 0, 'cash');
           
           await dbToUse.prepare(`
+            INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id) DO NOTHING
+          `).run('test-002', '63953', '2025-10-14', 2000, 100, 'card');
+          
+          // Insertar productos de prueba
+          await dbToUse.prepare(`
             INSERT INTO sale_products (id_sale_order, store_id, name, fixed_name, quantity, sale_price) 
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (id_sale_order, store_id, name) DO NOTHING
           `).run('test-001', '63953', 'Subway Club', 'subway-club', 2, 750);
+          
+          await dbToUse.prepare(`
+            INSERT INTO sale_products (id_sale_order, store_id, name, fixed_name, quantity, sale_price) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id_sale_order, store_id, name) DO NOTHING
+          `).run('test-002', '63953', 'Subway BMT', 'subway-bmt', 1, 2000);
           
           console.log('✅ Datos de prueba insertados correctamente');
         } else {
