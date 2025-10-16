@@ -16,15 +16,22 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Determinar qué base de datos usar
-const isProduction = process.env.NODE_ENV === 'production';
+// Determinar qué base de datos usar (detección más robusta)
+const isProduction = process.env.NODE_ENV === 'production' || 
+                    process.env.RAILWAY_ENVIRONMENT || 
+                    process.env.RAILWAY_PROJECT_ID ||
+                    process.env.DATABASE_URL?.includes('postgres') ||
+                    process.env.DATABASE_URL?.includes('railway');
+
 const dbToUse = isProduction ? postgresDb : sqliteDb; // Usar PostgreSQL en producción, SQLite en desarrollo
 
 console.log('🔍 Configuración de servidor:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+console.log('- RAILWAY_PROJECT_ID:', process.env.RAILWAY_PROJECT_ID);
+console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Configurada' : 'No configurada');
 console.log('- Es producción:', isProduction);
 console.log('- Base de datos:', isProduction ? 'PostgreSQL' : 'SQLite');
-console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Configurada' : 'No configurada');
 
 // Inicializar base de datos PostgreSQL en producción
 let dbReady = false;
@@ -899,7 +906,18 @@ app.get('/api/top-products', async (req, res) => {
     
     console.log('🔍 Parámetros recibidos:', { fromDate, toDate, storeId, limit });
     
-    const isPostgres = isProduction;
+    const isPostgres = process.env.NODE_ENV === 'production' || 
+                      process.env.RAILWAY_ENVIRONMENT || 
+                      process.env.RAILWAY_PROJECT_ID ||
+                      process.env.DATABASE_URL?.includes('postgres') ||
+                      process.env.DATABASE_URL?.includes('railway');
+    
+    console.log('🔧 Configuración de base de datos:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Configurada' : 'No configurada');
+    console.log('- Es PostgreSQL:', isPostgres);
+    
     const dateFunction = isPostgres ? 'so.order_date::date' : 'DATE(so.order_date)';
     const paramPlaceholder = isPostgres ? '$' : '?';
     const joinCondition = isPostgres ? 'sp.id_sale_order = so.id' : 'sp.id_sale_order = so.id_sale_order';
@@ -942,8 +960,10 @@ app.get('/api/top-products', async (req, res) => {
 
     console.log('🔧 Query final:', query);
     console.log('🔧 Parámetros:', params);
+    console.log('🔧 Usando base de datos:', isPostgres ? 'PostgreSQL' : 'SQLite');
 
     const products = await dbToUse.prepare(query).all(...params);
+    console.log('✅ Productos obtenidos:', products.length);
     res.json({ success: true, data: products, total_records: products.length });
   } catch (error) {
     console.error('Error obteniendo productos:', error);
