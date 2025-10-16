@@ -67,7 +67,9 @@ export const db = {
 export async function initializeDatabase() {
   const client = await pool.connect();
   try {
-    // Crear tablas si no existen
+    console.log('🔧 Creando tablas PostgreSQL...');
+    
+    // Crear tabla stores primero
     await client.query(`
       CREATE TABLE IF NOT EXISTS stores (
         id SERIAL PRIMARY KEY,
@@ -80,7 +82,9 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    console.log('✅ Tabla stores creada');
 
+    // Crear tabla sale_orders
     await client.query(`
       CREATE TABLE IF NOT EXISTS sale_orders (
         id TEXT PRIMARY KEY,
@@ -93,7 +97,9 @@ export async function initializeDatabase() {
         FOREIGN KEY (store_id) REFERENCES stores(store_id)
       );
     `);
+    console.log('✅ Tabla sale_orders creada');
 
+    // Crear tabla sale_products
     await client.query(`
       CREATE TABLE IF NOT EXISTS sale_products (
         id SERIAL PRIMARY KEY,
@@ -109,7 +115,17 @@ export async function initializeDatabase() {
         UNIQUE(id_sale_order, store_id, name)
       );
     `);
+    console.log('✅ Tabla sale_products creada');
 
+    // Verificar que las tablas existen
+    const result = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('stores', 'sale_orders', 'sale_products')
+    `);
+    
+    console.log('📊 Tablas creadas:', result.rows.map(row => row.table_name));
     console.log('✅ Base de datos PostgreSQL inicializada correctamente');
   } catch (error) {
     console.error('❌ Error inicializando base de datos:', error);
