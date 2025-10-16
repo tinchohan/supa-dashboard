@@ -82,7 +82,7 @@ app.get('/api/ai/status', async (req, res) => {
 });
 
 // Función para obtener datos diarios de ventas
-function getDailySalesData(fromDate, toDate, storeId) {
+async function getDailySalesData(fromDate, toDate, storeId) {
   try {
     
     // Query para obtener ventas diarias
@@ -138,7 +138,7 @@ function getDailySalesData(fromDate, toDate, storeId) {
 }
 
 // Función para obtener datos de productos más vendidos
-function getTopProductsData(fromDate, toDate, storeId, limit = 10) {
+async function getTopProductsData(fromDate, toDate, storeId, limit = 10) {
   try {
     
     const productsQuery = `
@@ -177,7 +177,7 @@ function getTopProductsData(fromDate, toDate, storeId, limit = 10) {
 }
 
 // Función para obtener datos de ventas por tienda
-function getStoreSalesData(fromDate, toDate, storeId) {
+async function getStoreSalesData(fromDate, toDate, storeId) {
   try {
     
     const storesQuery = `
@@ -429,16 +429,16 @@ app.post('/api/ai/charts', async (req, res) => {
     
     switch (chartType) {
       case 'daily':
-        chartData = getDailySalesData(fromDate, toDate, storeId);
+        chartData = await getDailySalesData(fromDate, toDate, storeId);
         break;
       case 'products':
-        chartData = getTopProductsData(fromDate, toDate, storeId, 10);
+        chartData = await getTopProductsData(fromDate, toDate, storeId, 10);
         break;
       case 'stores':
-        chartData = getStoreSalesData(fromDate, toDate, storeId);
+        chartData = await getStoreSalesData(fromDate, toDate, storeId);
         break;
       default:
-        chartData = getDailySalesData(fromDate, toDate, storeId);
+        chartData = await getDailySalesData(fromDate, toDate, storeId);
     }
     
     console.log('📊 Datos obtenidos para el gráfico:', chartData);
