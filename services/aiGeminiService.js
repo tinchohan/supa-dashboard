@@ -50,6 +50,9 @@ class AIGeminiService {
     console.log('- API Key length:', currentApiKey ? currentApiKey.length : 0);
     console.log('- Model Instance presente:', hasModel);
     console.log('- Configurado:', isConfigured);
+    console.log('- this.apiKey presente:', !!this.apiKey);
+    console.log('- this.genAI presente:', !!this.genAI);
+    console.log('- this.modelInstance presente:', !!this.modelInstance);
     
     // Si no está configurado pero hay API key, intentar reconfigurar
     if (currentApiKey && !this.modelInstance) {
@@ -72,7 +75,14 @@ class AIGeminiService {
       }
     }
     
-    return isConfigured;
+    // Si ya está configurado, verificar que realmente funciona
+    if (isConfigured) {
+      console.log('✅ Servicio ya configurado correctamente');
+      return true;
+    }
+    
+    console.log('❌ Servicio no configurado');
+    return false;
   }
 
   // Análisis avanzado de ventas con IA
