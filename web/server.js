@@ -22,8 +22,41 @@ const dbToUse = isProduction ? sqliteDb : db;
 if (isProduction) {
   console.log('🔧 Inicializando base de datos PostgreSQL...');
   initializeDatabase()
-    .then(() => {
+    .then(async () => {
       console.log('✅ Base de datos PostgreSQL inicializada correctamente');
+      
+      // Verificar si hay datos, si no, insertar datos de prueba
+      try {
+        const storeCount = await dbToUse.prepare('SELECT COUNT(*) as count FROM stores').get();
+        if (storeCount.count === 0) {
+          console.log('📊 Base de datos vacía, insertando datos de prueba...');
+          
+          // Insertar datos de prueba
+          await dbToUse.prepare(`
+            INSERT INTO stores (store_id, store_name, email, password) 
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (store_id) DO NOTHING
+          `).run('63953', 'Subway Lacroze', '63953@linisco.com.ar', '63953hansen');
+          
+          await dbToUse.prepare(`
+            INSERT INTO sale_orders (id, store_id, order_date, total, discount, payment_method) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id) DO NOTHING
+          `).run('test-001', '63953', '2025-10-15', 1500, 0, 'cash');
+          
+          await dbToUse.prepare(`
+            INSERT INTO sale_products (id_sale_order, store_id, name, fixed_name, quantity, sale_price) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id_sale_order, store_id, name) DO NOTHING
+          `).run('test-001', '63953', 'Subway Club', 'subway-club', 2, 750);
+          
+          console.log('✅ Datos de prueba insertados correctamente');
+        } else {
+          console.log(`✅ Base de datos ya tiene ${storeCount.count} tiendas`);
+        }
+      } catch (error) {
+        console.error('❌ Error insertando datos de prueba:', error.message);
+      }
     })
     .catch((error) => {
       console.error('❌ Error inicializando PostgreSQL:', error.message);
