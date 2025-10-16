@@ -1737,93 +1737,30 @@
                             console.log('🔍 ChartId enviado al servidor:', chartId);
                             console.log('🔍 ChartId en la respuesta:', chartData.chartCode ? 'Presente' : 'Ausente');
                             
-                            if (chartData.success && chartData.chartCode) {
-                                console.log('✅ Generando gráfico en chat...');
+                            if (chartData.success && chartData.simpleData) {
+                                console.log('✅ Generando gráfico en chat con datos reales...');
                                 console.log('🆔 Usando chartId:', chartId);
+                                console.log('📊 Datos del servidor:', chartData.simpleData);
                                 
-                                // Usar función simple con datos reales del servidor
-                                console.log('🔧 Usando función simple con datos reales...');
+                                // Usar datos simplificados del servidor
+                                const simpleData = chartData.simpleData;
+                                console.log('🔧 Usando simpleData del servidor');
                                 
-                                // Limpiar el código del servidor
-                                const cleanChartCode = chartData.chartCode
-                                    .replace(/```javascript/g, '')
-                                    .replace(/```/g, '')
-                                    .trim();
+                                // Crear datos para el gráfico
+                                const realData = {
+                                    labels: simpleData.labels || [],
+                                    datasets: simpleData.datasets || [{
+                                        label: 'Sin datos',
+                                        data: [0],
+                                        backgroundColor: 'rgba(200, 200, 200, 0.6)'
+                                    }]
+                                };
                                 
-                                // Extraer datos reales del código del servidor
-                                let realData = null;
-                                try {
-                                    console.log('🔍 Extrayendo datos reales del servidor...');
-                                    console.log('📄 Código del servidor:', cleanChartCode.substring(0, 200) + '...');
-                                    
-                                    // Buscar labels usando JSON.stringify
-                                    const labelsMatch = cleanChartCode.match(/labels:\s*JSON\.stringify\(([^)]+)\)/);
-                                    const dataMatch = cleanChartCode.match(/data:\s*JSON\.stringify\(([^)]+)\)/);
-                                    
-                                    // Buscar el tipo de gráfico
-                                    const typeMatch = cleanChartCode.match(/type:\s*['"`]([^'"`]+)['"`]/);
-                                    const chartType = typeMatch ? typeMatch[1] : 'bar';
-                                    
-                                    // Buscar el título del gráfico
-                                    const titleMatch = cleanChartCode.match(/text:\s*['"`]([^'"`]+)['"`]/);
-                                    const chartTitle = titleMatch ? titleMatch[1] : `Gráfico ${chartCounter}`;
-                                    
-                                    if (labelsMatch && dataMatch) {
-                                        console.log('📊 Labels encontrados:', labelsMatch[1]);
-                                        console.log('📊 Data encontrados:', dataMatch[1]);
-                                        console.log('📊 Tipo de gráfico:', chartType);
-                                        console.log('📊 Título:', chartTitle);
-                                        
-                                        // Evaluar las expresiones JSON
-                                        const labels = eval(labelsMatch[1]);
-                                        const data = eval(dataMatch[1]);
-                                        
-                                        realData = {
-                                            labels: labels,
-                                            datasets: [{
-                                                label: chartTitle,
-                                                data: data,
-                                                backgroundColor: 'rgba(54, 162, 235, 0.8)', // Se sobrescribirá con colores únicos
-                                                borderColor: 'rgba(54, 162, 235, 1)',
-                                                borderWidth: 2
-                                            }]
-                                        };
-                                        
-                                        console.log('✅ Datos reales extraídos:', realData);
-                                    } else {
-                                        console.log('⚠️ No se encontraron datos con JSON.stringify, intentando método alternativo...');
-                                        
-                                        // Método alternativo: buscar arrays directamente
-                                        const altLabelsMatch = cleanChartCode.match(/labels:\s*(\[[^\]]+\])/);
-                                        const altDataMatch = cleanChartCode.match(/data:\s*(\[[^\]]+\])/);
-                                        
-                                        if (altLabelsMatch && altDataMatch) {
-                                            const labels = JSON.parse(altLabelsMatch[1]);
-                                            const data = JSON.parse(altDataMatch[1]);
-                                            
-                                            realData = {
-                                                labels: labels,
-                                                datasets: [{
-                                                    label: 'Datos Reales',
-                                                    data: data,
-                                                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                                                    borderColor: 'rgba(54, 162, 235, 1)',
-                                                    borderWidth: 2
-                                                }]
-                                            };
-                                            
-                                            console.log('✅ Datos reales extraídos (método alternativo):', realData);
-                                        } else {
-                                            console.log('❌ No se pudieron extraer datos del código del servidor');
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn('⚠️ Error extrayendo datos del servidor:', e);
-                                }
+                                console.log('✅ Datos reales preparados:', realData);
                                 
-                                // Usar el tipo de gráfico extraído del servidor
-                                const extractedType = realData ? (cleanChartCode.match(/type:\s*['"`]([^'"`]+)['"`]/) ? cleanChartCode.match(/type:\s*['"`]([^'"`]+)['"`]/)[1] : 'bar') : 'bar';
-                                createSimpleChart(extractedType, null, realData);
+                                // Usar el tipo de gráfico del servidor
+                                const chartType = simpleData.type || 'bar';
+                                createSimpleChart(chartType, null, realData);
                                 
                                 // Agregar mensaje de texto DESPUÉS del gráfico
                                 addChatMessage(data.response, 'ai');
