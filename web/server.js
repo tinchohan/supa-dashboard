@@ -51,7 +51,7 @@ if (isProduction) {
         const storeCount = await dbToUse.prepare('SELECT COUNT(*) as count FROM stores').get();
         console.log('📊 Tiendas existentes:', storeCount.count);
         
-        if (storeCount.count === 0) {
+        if (Number(storeCount.count) === 0) {
           console.log('📊 Base de datos vacía, insertando datos de prueba...');
           
           // Insertar tienda de prueba

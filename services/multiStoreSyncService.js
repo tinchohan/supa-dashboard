@@ -63,8 +63,13 @@ class MultiStoreSyncService {
   initializeStores() {
     try {
       const insertStore = this.dbToUse.prepare(`
-        INSERT OR REPLACE INTO stores (store_id, store_name, email, is_active, updated_at)
+        INSERT INTO stores (store_id, store_name, email, is_active, updated_at)
         VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (store_id) DO UPDATE SET
+          store_name = EXCLUDED.store_name,
+          email = EXCLUDED.email,
+          is_active = 1,
+          updated_at = CURRENT_TIMESTAMP
       `);
 
       this.stores.forEach(store => {
