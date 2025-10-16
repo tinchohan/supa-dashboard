@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 
 // Determinar qué base de datos usar
 const isProduction = process.env.NODE_ENV === 'production';
-const dbToUse = db; // Usar PostgreSQL siempre (tanto en desarrollo como producción)
+const dbToUse = isProduction ? sqliteDb : db; // Usar PostgreSQL en producción, SQLite en desarrollo
 
 // Inicializar base de datos PostgreSQL en producción
 if (isProduction) {
