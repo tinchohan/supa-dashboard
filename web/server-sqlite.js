@@ -39,7 +39,41 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
 });
 
-// API de autenticación
+// API de autenticación única
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos' });
+    }
+
+    // Credenciales únicas para acceder al dashboard
+    const validCredentials = {
+      username: 'admin',
+      password: 'linisco2025'
+    };
+
+    if (username === validCredentials.username && password === validCredentials.password) {
+      res.json({ 
+        success: true, 
+        message: 'Autenticación exitosa',
+        redirect: '/',
+        user: {
+          username: username,
+          role: 'admin'
+        }
+      });
+    } else {
+      res.status(401).json({ success: false, message: 'Credenciales inválidas' });
+    }
+  } catch (error) {
+    console.error('Error en autenticación:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// API de autenticación para tiendas (mantener compatibilidad)
 app.post('/api/auth', async (req, res) => {
   try {
     const { email, password } = req.body;
