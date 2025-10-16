@@ -224,12 +224,21 @@ class MultiStoreSyncService {
           const products = allProducts.filter(product => sessionOrderIds.includes(product.idSaleOrder));
           console.log(`  📦 ${products.length} productos encontrados para sesión ${session.idSession}`);
           
+          // Crear un mapeo de idSaleOrder a orderId para usar en la inserción
+          const orderIdMap = {};
+          sessionOrders.forEach(order => {
+            orderIdMap[order.idSaleOrder] = `${storeConfig.store_id}_${order.idSaleOrder}`;
+          });
+          
           // Insertar productos
           for (const product of products) {
             try {
               console.log(`    📦 Insertando producto: ${product.name}`);
+              // Usar el orderId correcto basado en el idSaleOrder del producto
+              const productOrderId = orderIdMap[product.idSaleOrder] || orderId;
+              
               console.log(`    📊 Datos de producto:`, {
-                orderId,
+                orderId: productOrderId,
                 storeId: storeConfig.store_id,
                 name: product.name || 'Producto sin nombre',
                 quantity: product.quantity || 1,
@@ -246,7 +255,7 @@ class MultiStoreSyncService {
                     quantity = EXCLUDED.quantity,
                     sale_price = EXCLUDED.sale_price
                 `                ).run(
-                  orderId,
+                  productOrderId,
                   storeConfig.store_id,
                   product.name || 'Producto sin nombre',
                   product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
@@ -266,7 +275,7 @@ class MultiStoreSyncService {
                   session.shopNumber,
                   storeConfig.store_id,
                   product.idSaleProduct || Date.now() + Math.random(),
-                  session.idSession,
+                  product.idSaleOrder, // Usar el idSaleOrder real del producto
                   product.name || 'Producto sin nombre',
                   product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
                   product.quantity || 1,
