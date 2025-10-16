@@ -362,14 +362,14 @@ app.get('/api/sync/status', (req, res) => {
 // API de chat con IA
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, context = 'general' } = req.body;
+    const { message, fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null } = req.body;
     
     if (!message) {
       return res.status(400).json({ success: false, message: 'Mensaje requerido' });
     }
 
-    const response = await aiGeminiService.generateResponse(message, context);
-    res.json({ success: true, response });
+    const response = await aiGeminiService.chatWithContext('user', message, fromDate, toDate, storeId);
+    res.json({ success: true, response: response.message });
   } catch (error) {
     console.error('Error en chat IA:', error);
     res.status(500).json({ success: false, message: 'Error en chat IA' });
@@ -379,13 +379,53 @@ app.post('/api/chat', async (req, res) => {
 // API de generación de gráficos
 app.post('/api/generate-chart', async (req, res) => {
   try {
-    const { query, chartType = 'bar' } = req.body;
+    const { query, chartType = 'bar', fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null } = req.body;
     
     if (!query) {
       return res.status(400).json({ success: false, message: 'Consulta requerida' });
     }
 
-    const chartCode = await aiGeminiService.generateChartCode(query, chartType);
+    // Validar que la consulta no sea peligrosa
+    const dangerousKeywords = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'CREATE'];
+    const upperQuery = query.toUpperCase();
+    
+    for (const keyword of dangerousKeywords) {
+      if (upperQuery.includes(keyword)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Operación no permitida: ${keyword}` 
+        });
+      }
+    }
+    
+    // Ejecutar consulta SQL directamente
+    const result = dbToUse.prepare(query).all();
+    
+    // Generar código de gráfico básico
+    const chartCode = `
+      // Gráfico ${chartType} generado automáticamente
+      const data = ${JSON.stringify(result, null, 2)};
+      
+      // Configuración del gráfico
+      const config = {
+        type: '${chartType}',
+        data: data,
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Gráfico de Datos'
+            }
+          }
+        }
+      };
+      
+      // Crear gráfico
+      const ctx = document.getElementById('chartCanvas').getContext('2d');
+      new Chart(ctx, config);
+    `;
+    
     res.json({ success: true, chartCode });
   } catch (error) {
     console.error('Error generando gráfico:', error);
@@ -574,6 +614,49 @@ app.post('/api/sql', async (req, res) => {
   } catch (error) {
     console.error('Error ejecutando consulta SQL:', error);
     res.status(500).json({ success: false, message: 'Error ejecutando consulta SQL: ' + error.message });
+  }
+});
+
+// API de análisis avanzado con IA
+app.post('/api/ai-analysis', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null } = req.body;
+    
+    const analysis = await aiGeminiService.analyzeSalesWithAI(fromDate, toDate, storeId);
+    res.json(analysis);
+  } catch (error) {
+    console.error('Error en análisis IA:', error);
+    res.status(500).json({ success: false, message: 'Error en análisis IA' });
+  }
+});
+
+// API de predicciones con IA
+app.post('/api/ai-predictions', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null } = req.body;
+    
+    const predictions = await aiGeminiService.generateAdvancedPredictions(fromDate, toDate, storeId);
+    res.json(predictions);
+  } catch (error) {
+    console.error('Error en predicciones IA:', error);
+    res.status(500).json({ success: false, message: 'Error en predicciones IA' });
+  }
+});
+
+// API de consulta en lenguaje natural
+app.post('/api/natural-query', async (req, res) => {
+  try {
+    const { message, fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Mensaje requerido' });
+    }
+    
+    const result = await aiGeminiService.naturalLanguageQuery(message, fromDate, toDate, storeId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en consulta natural:', error);
+    res.status(500).json({ success: false, message: 'Error en consulta natural' });
   }
 });
 
