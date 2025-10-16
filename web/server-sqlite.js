@@ -681,6 +681,26 @@ app.get('/api/debug-config', (req, res) => {
   }
 });
 
+// API para reinicializar el servicio de IA
+app.post('/api/reinit-ai', (req, res) => {
+  try {
+    console.log('🔄 Reinicializando servicio de IA...');
+    
+    // Forzar verificación de configuración
+    const wasConfigured = aiGeminiService.isConfigured();
+    console.log('✅ Servicio de IA reinicializado. Configurado:', wasConfigured);
+    
+    res.json({ 
+      success: true, 
+      message: 'Servicio de IA reinicializado',
+      configured: wasConfigured
+    });
+  } catch (error) {
+    console.error('Error reinicializando IA:', error);
+    res.status(500).json({ success: false, message: 'Error reinicializando IA' });
+  }
+});
+
 // API de productos (para debugging)
 app.get('/api/products', async (req, res) => {
   try {
