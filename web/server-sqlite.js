@@ -368,11 +368,112 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Mensaje requerido' });
     }
 
-    console.log('🔍 Chat IA - Usando datos reales de la base de datos...');
+    console.log('🔍 Chat IA - Consultando datos reales de la base de datos...');
     
-    // Usar el servicio de IA con datos reales
-    const response = await aiGeminiService.chatWithContext('user', message, fromDate, toDate, storeId);
-    res.json({ success: true, response: response.message });
+    // Verificar API key
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.json({ success: true, response: '🤖 Entiendo tu consulta: "' + message + '". Para respuestas más inteligentes, configura una API key de Gemini.' });
+    }
+
+    // Obtener datos reales de la base de datos
+    let contextData = '';
+    try {
+      // Consultar estadísticas básicas
+      const statsQuery = `
+        SELECT 
+          COUNT(*) as total_orders,
+          COALESCE(SUM(total), 0) as total_revenue,
+          COALESCE(AVG(total), 0) as avg_order_value,
+          COUNT(DISTINCT store_id) as total_stores
+        FROM sale_orders 
+        WHERE DATE(order_date) BETWEEN ? AND ?
+        ${storeId ? 'AND store_id = ?' : ''}
+      `;
+      
+      const params = storeId ? [fromDate, toDate, storeId] : [fromDate, toDate];
+      const stats = dbToUse.prepare(statsQuery).get(...params);
+      
+      // Consultar productos más vendidos
+      const productsQuery = `
+        SELECT 
+          sp.name,
+          SUM(sp.quantity) as total_quantity,
+          SUM(sp.sale_price * sp.quantity) as total_revenue
+        FROM sale_products sp
+        JOIN sale_orders so ON sp.id_sale_order = so.id_sale_order
+        WHERE DATE(so.order_date) BETWEEN ? AND ?
+        ${storeId ? 'AND so.store_id = ?' : ''}
+        GROUP BY sp.name
+        ORDER BY total_quantity DESC
+        LIMIT 5
+      `;
+      
+      const products = dbToUse.prepare(productsQuery).all(...params);
+      
+      // Consultar métodos de pago
+      const paymentQuery = `
+        SELECT 
+          payment_method,
+          COUNT(*) as count,
+          SUM(total) as revenue
+        FROM sale_orders 
+        WHERE DATE(order_date) BETWEEN ? AND ?
+        ${storeId ? 'AND store_id = ?' : ''}
+        GROUP BY payment_method
+        ORDER BY count DESC
+      `;
+      
+      const payments = dbToUse.prepare(paymentQuery).all(...params);
+      
+      contextData = `
+Datos reales de la base de datos para el período ${fromDate} a ${toDate}${storeId ? ` (Tienda: ${storeId})` : ''}:
+
+ESTADÍSTICAS GENERALES:
+- Total de órdenes: ${stats.total_orders}
+- Ingresos totales: $${stats.total_revenue.toFixed(2)}
+- Promedio por orden: $${stats.avg_order_value.toFixed(2)}
+- Tiendas activas: ${stats.total_stores}
+
+PRODUCTOS MÁS VENDIDOS:
+${products.map((p, i) => `${i+1}. ${p.name}: ${p.total_quantity} unidades, $${p.total_revenue.toFixed(2)}`).join('\n')}
+
+MÉTODOS DE PAGO:
+${payments.map(p => `- ${p.payment_method}: ${p.count} órdenes, $${p.revenue.toFixed(2)}`).join('\n')}
+      `;
+      
+      console.log('✅ Datos de contexto obtenidos:', contextData.substring(0, 200) + '...');
+    } catch (dbError) {
+      console.warn('⚠️ Error obteniendo datos de contexto:', dbError);
+      contextData = 'No se pudieron obtener datos específicos de la base de datos.';
+    }
+
+    // Crear instancia de Gemini
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+      }
+    });
+    
+    const prompt = `Eres un asistente experto en análisis de datos de ventas de restaurantes Subway. Responde de manera útil y profesional en español.
+
+${contextData}
+
+Pregunta del usuario: "${message}"
+
+Responde basándote en los datos reales proporcionados arriba. Sé específico con números y estadísticas cuando sea relevante.`;
+    
+    console.log('🤖 Enviando prompt a Gemini con datos reales...');
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    console.log('✅ Respuesta de Gemini recibida:', text.substring(0, 100) + '...');
+    res.json({ success: true, response: text });
   } catch (error) {
     console.error('❌ Error en chat IA:', error);
     res.json({ success: true, response: '🤖 Entiendo tu consulta: "' + message + '". Para respuestas más inteligentes, configura una API key de Gemini.' });
