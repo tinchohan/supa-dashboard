@@ -18,6 +18,10 @@ function convertQuery(query, params) {
   // Reemplazar ? con $1, $2, $3, etc.
   convertedQuery = convertedQuery.replace(/\?/g, () => `$${paramIndex++}`);
   
+  console.log('🔧 Query original:', query);
+  console.log('🔧 Query convertida:', convertedQuery);
+  console.log('🔧 Parámetros:', params);
+  
   return { query: convertedQuery, params };
 }
 
