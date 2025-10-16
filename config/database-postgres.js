@@ -70,18 +70,21 @@ export async function initializeDatabase() {
     // Crear tablas si no existen
     await client.query(`
       CREATE TABLE IF NOT EXISTS stores (
-        store_id INTEGER PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
+        store_id TEXT UNIQUE NOT NULL,
         store_name TEXT NOT NULL,
-        email TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        email TEXT NOT NULL,
+        password TEXT,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS sale_orders (
-        id INTEGER PRIMARY KEY,
-        id_sale_order TEXT UNIQUE NOT NULL,
-        store_id INTEGER NOT NULL,
+        id TEXT PRIMARY KEY,
+        store_id TEXT NOT NULL,
         order_date TIMESTAMP NOT NULL,
         total DECIMAL(10,2) NOT NULL,
         discount DECIMAL(10,2) DEFAULT 0,
@@ -93,15 +96,17 @@ export async function initializeDatabase() {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS sale_products (
-        id INTEGER PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         id_sale_order TEXT NOT NULL,
-        store_id INTEGER NOT NULL,
+        store_id TEXT NOT NULL,
         name TEXT NOT NULL,
         fixed_name TEXT,
         quantity INTEGER NOT NULL,
         sale_price DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (store_id) REFERENCES stores(store_id)
+        FOREIGN KEY (id_sale_order) REFERENCES sale_orders(id),
+        FOREIGN KEY (store_id) REFERENCES stores(store_id),
+        UNIQUE(id_sale_order, store_id, name)
       );
     `);
 
