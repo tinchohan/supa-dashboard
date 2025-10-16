@@ -207,10 +207,22 @@ class MultiStoreSyncService {
           }
           console.log(`  ✅ Orden insertada:`, orderResult);
 
-          // Obtener productos de la sesión
-          const products = await api.getSessionProducts(session.idSession);
+          // Obtener órdenes de la sesión y luego sus productos
+          console.log(`  📦 Obteniendo órdenes para sesión ${session.idSession}...`);
+          
+          // Obtener todas las órdenes del período
+          const allOrders = await api.getSaleOrders(fromDate, toDate);
+          console.log(`  📊 Total de órdenes en período: ${allOrders.length}`);
+          
+          // Filtrar órdenes por sesión
+          const sessionOrders = allOrders.filter(order => order.idSession === session.idSession);
+          console.log(`  📦 ${sessionOrders.length} órdenes encontradas para sesión ${session.idSession}`);
+          
+          // Obtener productos de todas las órdenes de la sesión
+          const allProducts = await api.getSaleProducts(fromDate, toDate);
+          const sessionOrderIds = sessionOrders.map(order => order.idSaleOrder);
+          const products = allProducts.filter(product => sessionOrderIds.includes(product.idSaleOrder));
           console.log(`  📦 ${products.length} productos encontrados para sesión ${session.idSession}`);
-          console.log(`  📋 Datos de productos:`, JSON.stringify(products, null, 2));
           
           // Insertar productos
           for (const product of products) {
@@ -221,7 +233,7 @@ class MultiStoreSyncService {
                 storeId: storeConfig.store_id,
                 name: product.name || 'Producto sin nombre',
                 quantity: product.quantity || 1,
-                price: product.price || 0
+                price: product.salePrice || 0
               });
               
               let productResult;
@@ -233,13 +245,13 @@ class MultiStoreSyncService {
                   ON CONFLICT (id_sale_order, store_id, name) DO UPDATE SET
                     quantity = EXCLUDED.quantity,
                     sale_price = EXCLUDED.sale_price
-                `).run(
+                `                ).run(
                   orderId,
                   storeConfig.store_id,
                   product.name || 'Producto sin nombre',
                   product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
                   product.quantity || 1,
-                  product.price || 0
+                  product.salePrice || 0
                 );
               } else {
                 // SQLite - esquema completo
@@ -249,16 +261,16 @@ class MultiStoreSyncService {
                   ON CONFLICT (linisco_id) DO UPDATE SET
                     quantity = EXCLUDED.quantity,
                     sale_price = EXCLUDED.sale_price
-                `).run(
-                  product.id || Date.now() + Math.random(), // ID único si no existe
+                `                ).run(
+                  product.idSaleProduct || Date.now() + Math.random(), // ID único si no existe
                   session.shopNumber,
                   storeConfig.store_id,
-                  product.id || Date.now() + Math.random(),
+                  product.idSaleProduct || Date.now() + Math.random(),
                   session.idSession,
                   product.name || 'Producto sin nombre',
                   product.name?.toLowerCase().replace(/\s+/g, '-') || 'producto-sin-nombre',
                   product.quantity || 1,
-                  product.price || 0
+                  product.salePrice || 0
                 );
               }
               console.log(`    ✅ Producto insertado:`, productResult);
