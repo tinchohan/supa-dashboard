@@ -159,13 +159,17 @@ app.get('/api/top-products', async (req, res) => {
   }
 });
 
-// API de estadísticas
+// API de estadísticas completas
 app.post('/api/stats', async (req, res) => {
   try {
     const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId } = req.body;
     
-    let query = `
-      SELECT
+    console.log('📊 Stats request - storeId:', storeId);
+    console.log('📅 Fechas solicitadas - fromDate:', fromDate, 'toDate:', toDate);
+    
+    // Estadísticas generales
+    let statsQuery = `
+      SELECT 
         COUNT(DISTINCT so.linisco_id) as total_orders,
         COUNT(DISTINCT s.store_id) as total_stores,
         SUM(so.total - so.discount) as total_revenue,
@@ -175,25 +179,149 @@ app.post('/api/stats', async (req, res) => {
       JOIN stores s ON so.store_id = s.store_id
       WHERE DATE(so.order_date) BETWEEN ? AND ?
     `;
-
+    
     const params = [fromDate, toDate];
-
+    
+    // Manejar múltiples storeId si se proporcionan
     if (storeId) {
-      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      let storeIds;
+      if (Array.isArray(storeId)) {
+        storeIds = storeId;
+      } else {
+        storeIds = [storeId];
+      }
+      
+      console.log('🏪 StoreIds procesados:', storeIds);
+      console.log('🏪 Tipos de storeIds:', storeIds.map(id => typeof id));
+      
       if (storeIds.length > 0) {
         const placeholders = storeIds.map(() => '?').join(',');
-        query += ` AND so.store_id IN (${placeholders})`;
+        statsQuery += ` AND so.store_id IN (${placeholders})`;
         params.push(...storeIds);
       }
     }
-
-    console.log('🔍 Query de estadísticas:', query);
+    
+    console.log('🔍 Query de estadísticas:', statsQuery);
     console.log('📊 Parámetros:', params);
-
-    const stats = dbToUse.prepare(query).get(...params);
+    
+    const stats = dbToUse.prepare(statsQuery).get(...params);
+    
+    // Desglose por medios de pago
+    let paymentQuery = `
+      SELECT 
+        so.payment_method,
+        COUNT(*) as order_count,
+        SUM(so.total - so.discount) as total_amount
+      FROM sale_orders so
+      JOIN stores s ON so.store_id = s.store_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const paymentParams = [fromDate, toDate];
+    
+    if (storeId) {
+      let storeIds;
+      if (Array.isArray(storeId)) {
+        storeIds = storeId;
+      } else {
+        storeIds = [storeId];
+      }
+      
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        paymentQuery += ` AND so.store_id IN (${placeholders})`;
+        paymentParams.push(...storeIds);
+      }
+    }
+    
+    paymentQuery += ' GROUP BY so.payment_method ORDER BY total_amount DESC';
+    
+    const paymentStmt = dbToUse.prepare(paymentQuery);
+    const paymentBreakdown = paymentStmt.all(...paymentParams);
+    
+    // Desglose por tienda (siempre mostrar, pero filtrar según selección)
+    let storeQuery = `
+      SELECT 
+        s.store_id,
+        s.store_name,
+        COUNT(DISTINCT so.linisco_id) as order_count,
+        SUM(so.total - so.discount) as revenue
+        FROM sale_orders so
+        JOIN stores s ON so.store_id = s.store_id
+        WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const storeParams = [fromDate, toDate];
+    
+    if (storeId) {
+      let storeIds;
+      if (Array.isArray(storeId)) {
+        storeIds = storeId;
+      } else {
+        storeIds = [storeId];
+      }
+      
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        storeQuery += ` AND so.store_id IN (${placeholders})`;
+        storeParams.push(...storeIds);
+      }
+    }
+    
+    storeQuery += `
+        GROUP BY s.store_id, s.store_name
+        ORDER BY revenue DESC
+      `;
+      
+    const storeStmt = dbToUse.prepare(storeQuery);
+    const storeResults = storeStmt.all(...storeParams);
+    
+    // Calcular porcentajes
+    const totalRevenue = storeResults.reduce((sum, store) => sum + store.revenue, 0);
+    const storeBreakdown = storeResults.map(store => ({
+      ...store,
+      percentage: totalRevenue > 0 ? (store.revenue / totalRevenue) * 100 : 0
+    }));
+    
+    // Contar productos únicos
+    let productQuery = `
+      SELECT COUNT(DISTINCT sp.name) as total_products
+      FROM sale_products sp
+      JOIN sale_orders so ON sp.id_sale_order = so.linisco_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const productParams = [fromDate, toDate];
+    
+    if (storeId) {
+      let storeIds;
+      if (Array.isArray(storeId)) {
+        storeIds = storeId;
+      } else {
+        storeIds = [storeId];
+      }
+      
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        productQuery += ` AND so.store_id IN (${placeholders})`;
+        productParams.push(...storeIds);
+      }
+    }
+    
+    const productStmt = dbToUse.prepare(productQuery);
+    const productResult = productStmt.get(...productParams);
     
     console.log('✅ Estadísticas obtenidas:', stats);
-    res.json({ success: true, data: stats });
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        total_products: productResult.total_products || 0,
+        payment_breakdown: paymentBreakdown,
+        store_breakdown: storeBreakdown
+      }
+    });
+    
   } catch (error) {
     console.error('Error obteniendo estadísticas:', error);
     res.status(500).json({ success: false, message: 'Error obteniendo estadísticas' });
@@ -262,6 +390,190 @@ app.post('/api/generate-chart', async (req, res) => {
   } catch (error) {
     console.error('Error generando gráfico:', error);
     res.status(500).json({ success: false, message: 'Error generando gráfico' });
+  }
+});
+
+// API de ventas diarias
+app.post('/api/daily-sales', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId } = req.body;
+    
+    let query = `
+      SELECT 
+        DATE(so.order_date) as date,
+        COUNT(DISTINCT so.linisco_id) as orders,
+        SUM(so.total - so.discount) as revenue
+      FROM sale_orders so
+      JOIN stores s ON so.store_id = s.store_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const params = [fromDate, toDate];
+    
+    if (storeId) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        query += ` AND so.store_id IN (${placeholders})`;
+        params.push(...storeIds);
+      }
+    }
+    
+    query += ' GROUP BY DATE(so.order_date) ORDER BY date';
+    
+    const dailySales = dbToUse.prepare(query).all(...params);
+    res.json({ success: true, data: dailySales });
+  } catch (error) {
+    console.error('Error obteniendo ventas diarias:', error);
+    res.status(500).json({ success: false, message: 'Error obteniendo ventas diarias' });
+  }
+});
+
+// API de ventas por tienda
+app.post('/api/store-sales', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId } = req.body;
+    
+    let query = `
+      SELECT 
+        s.store_id,
+        s.store_name,
+        COUNT(DISTINCT so.linisco_id) as orders,
+        SUM(so.total - so.discount) as revenue,
+        AVG(so.total - so.discount) as avg_order_value
+      FROM sale_orders so
+      JOIN stores s ON so.store_id = s.store_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const params = [fromDate, toDate];
+    
+    if (storeId) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        query += ` AND so.store_id IN (${placeholders})`;
+        params.push(...storeIds);
+      }
+    }
+    
+    query += ' GROUP BY s.store_id, s.store_name ORDER BY revenue DESC';
+    
+    const storeSales = dbToUse.prepare(query).all(...params);
+    res.json({ success: true, data: storeSales });
+  } catch (error) {
+    console.error('Error obteniendo ventas por tienda:', error);
+    res.status(500).json({ success: false, message: 'Error obteniendo ventas por tienda' });
+  }
+});
+
+// API de resumen de ventas
+app.post('/api/sales-summary', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', storeId } = req.body;
+    
+    // Obtener datos de ventas diarias
+    let dailyQuery = `
+      SELECT 
+        DATE(so.order_date) as date,
+        COUNT(DISTINCT so.linisco_id) as orders,
+        SUM(so.total - so.discount) as revenue
+      FROM sale_orders so
+      JOIN stores s ON so.store_id = s.store_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const dailyParams = [fromDate, toDate];
+    
+    if (storeId) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        dailyQuery += ` AND so.store_id IN (${placeholders})`;
+        dailyParams.push(...storeIds);
+      }
+    }
+    
+    dailyQuery += ' GROUP BY DATE(so.order_date) ORDER BY date';
+    
+    const dailySales = dbToUse.prepare(dailyQuery).all(...dailyParams);
+    
+    // Obtener productos top
+    let topProductsQuery = `
+      SELECT
+        sp.name,
+        sp.fixed_name,
+        s.store_name,
+        s.store_id,
+        COUNT(*) as times_sold,
+        SUM(sp.quantity) as total_quantity,
+        SUM(sp.sale_price * sp.quantity) as total_revenue,
+        AVG(sp.sale_price) as avg_price
+      FROM sale_products sp
+      JOIN sale_orders so ON sp.id_sale_order = so.linisco_id
+      JOIN stores s ON sp.store_id = s.store_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const topProductsParams = [fromDate, toDate];
+    
+    if (storeId) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map(() => '?').join(',');
+        topProductsQuery += ` AND sp.store_id IN (${placeholders})`;
+        topProductsParams.push(...storeIds);
+      }
+    }
+    
+    topProductsQuery += `
+      GROUP BY sp.name, sp.fixed_name, s.store_id, s.store_name
+      ORDER BY total_revenue DESC
+      LIMIT 10
+    `;
+    
+    const topProducts = dbToUse.prepare(topProductsQuery).all(...topProductsParams);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        daily_sales: dailySales,
+        top_products: topProducts
+      }
+    });
+  } catch (error) {
+    console.error('Error obteniendo resumen de ventas:', error);
+    res.status(500).json({ success: false, message: 'Error obteniendo resumen de ventas' });
+  }
+});
+
+// API de consultas SQL personalizadas
+app.post('/api/sql', async (req, res) => {
+  try {
+    const { query } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ success: false, message: 'Consulta SQL requerida' });
+    }
+    
+    // Validar que la consulta no sea peligrosa
+    const dangerousKeywords = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'CREATE'];
+    const upperQuery = query.toUpperCase();
+    
+    for (const keyword of dangerousKeywords) {
+      if (upperQuery.includes(keyword)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Operación no permitida: ${keyword}` 
+        });
+      }
+    }
+    
+    const result = dbToUse.prepare(query).all();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error ejecutando consulta SQL:', error);
+    res.status(500).json({ success: false, message: 'Error ejecutando consulta SQL: ' + error.message });
   }
 });
 
