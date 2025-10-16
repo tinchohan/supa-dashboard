@@ -234,7 +234,7 @@ async function getDailySalesData(fromDate, toDate, storeId) {
         COUNT(DISTINCT so.id) as orders,
         SUM(so.total - so.discount) as revenue
       FROM sale_orders so
-      JOIN stores s ON so.store_id = s.store_id
+      JOIN stores s ON so.store_id::text = s.store_id::text
       WHERE ${dateFunction} BETWEEN ${paramPlaceholder}1 AND ${paramPlaceholder}2
       ${storeId ? `AND so.store_id = ${paramPlaceholder}3` : ''}
       GROUP BY ${dateFunction}
@@ -337,7 +337,7 @@ async function getStoreSalesData(fromDate, toDate, storeId) {
         COUNT(DISTINCT so.id) as orders,
         SUM(so.total - so.discount) as revenue
       FROM sale_orders so
-      JOIN stores s ON so.store_id = s.store_id
+      JOIN stores s ON so.store_id::text = s.store_id::text
       WHERE ${dateFunction} BETWEEN ${paramPlaceholder}1 AND ${paramPlaceholder}2
       ${storeId ? `AND so.store_id = ${paramPlaceholder}3` : ''}
       GROUP BY s.store_name, s.store_id
@@ -639,7 +639,7 @@ app.get('/api/sales-summary', async (req, res) => {
         SUM(so.total - so.discount) as total_amount,
         AVG(so.total - so.discount) as avg_order_value
       FROM sale_orders so
-      JOIN stores s ON so.store_id = s.store_id
+      JOIN stores s ON so.store_id::text = s.store_id::text
       WHERE ${dateFunction} BETWEEN ${paramPlaceholder}1 AND ${paramPlaceholder}2
     `;
     
@@ -868,7 +868,7 @@ app.post('/api/stats', async (req, res) => {
         AVG(so.total - so.discount) as avg_order_value,
         COUNT(DISTINCT ${dateFunction}) as days_with_sales
       FROM sale_orders so
-      JOIN stores s ON so.store_id = s.store_id
+      JOIN stores s ON so.store_id::text = s.store_id::text
       WHERE ${dateFunction} BETWEEN ${paramPlaceholder}1 AND ${paramPlaceholder}2
     `;
     
@@ -936,7 +936,7 @@ app.get('/api/top-products', async (req, res) => {
         AVG(sp.sale_price) as avg_price
       FROM sale_products sp
       JOIN sale_orders so ON ${joinCondition}
-      JOIN stores s ON sp.store_id = s.store_id
+      JOIN stores s ON sp.store_id::text = s.store_id::text
       WHERE ${dateFunction} BETWEEN ${paramPlaceholder}1 AND ${paramPlaceholder}2
     `;
     
