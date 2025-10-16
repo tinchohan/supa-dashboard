@@ -34,6 +34,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
+// Ruta específica para login
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
 // API de autenticación
 app.post('/api/auth', async (req, res) => {
   try {
