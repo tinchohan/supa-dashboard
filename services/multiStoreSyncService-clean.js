@@ -27,6 +27,11 @@ class MultiStoreSyncService {
   async syncAllStores(fromDate, toDate) {
     console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
     console.log(`📊 Tiendas a sincronizar: ${this.stores.length}`);
+    console.log(`🔧 Entorno de sincronización:`, {
+      isProduction: this.isProduction,
+      database: this.isProduction ? 'PostgreSQL' : 'SQLite',
+      stores: this.stores.length
+    });
     
     const results = [];
     const errors = [];
@@ -295,6 +300,8 @@ class MultiStoreSyncService {
         }
       }
 
+      console.log(`✅ ${storeConfig.store_name} completada: ${recordsProcessed} registros de ${sessions.length} sesiones`);
+      
       return {
         store: storeConfig.store_name,
         recordsProcessed,
