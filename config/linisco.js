@@ -14,6 +14,15 @@ class LiniscoAPI {
     this.storeId = null;
   }
 
+  // Helper para formatear fechas al formato que espera la API (DD/MM/YYYY)
+  formatDate(dateStr) {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
   async authenticate() {
     if (!this.storeConfig) {
       throw new Error('Configuración de tienda no proporcionada');
@@ -61,9 +70,9 @@ class LiniscoAPI {
     try {
       const response = await axios.get(`${this.baseURL}/sale_orders`, {
         headers: this.getAuthHeaders(),
-        params: {
-          fromDate,
-          toDate
+        data: {
+          fromDate: this.formatDate(fromDate),
+          toDate: this.formatDate(toDate)
         }
       });
       
@@ -78,9 +87,9 @@ class LiniscoAPI {
     try {
       const response = await axios.get(`${this.baseURL}/sale_products`, {
         headers: this.getAuthHeaders(),
-        params: {
-          fromDate,
-          toDate
+        data: {
+          fromDate: this.formatDate(fromDate),
+          toDate: this.formatDate(toDate)
         }
       });
       
@@ -111,9 +120,9 @@ class LiniscoAPI {
     try {
       const response = await axios.get(`${this.baseURL}/psessions`, {
         headers: this.getAuthHeaders(),
-        params: {
-          fromDate,
-          toDate
+        data: {
+          fromDate: this.formatDate(fromDate),
+          toDate: this.formatDate(toDate)
         }
       });
       
