@@ -1,0 +1,9 @@
+# Archivos a ignorar en Railway
+node_modules/
+.git/
+.env
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
