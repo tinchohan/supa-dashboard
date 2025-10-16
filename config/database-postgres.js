@@ -84,6 +84,12 @@ export async function initializeDatabase() {
     `);
     console.log('✅ Tabla stores creada');
 
+    // Asegurar columnas requeridas (para esquemas creados previamente)
+    await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS email TEXT`);
+    await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS password TEXT`);
+    await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+    await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+
     // Crear tabla sale_orders
     await client.query(`
       CREATE TABLE IF NOT EXISTS sale_orders (
