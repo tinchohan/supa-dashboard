@@ -1,0 +1,28 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm run start:prod"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Configuración automática de servicios
+[[services]]
+name = "web"
+source = "."
+
+[[services]]
+name = "postgres"
+image = "postgres:15"
+environment = { POSTGRES_DB = "railway", POSTGRES_USER = "postgres", POSTGRES_PASSWORD = "password" }
+
+# Variables de entorno para el servicio web
+[services.web.environment]
+NODE_ENV = "production"
+PORT = "3000"
+
+# Referencia automática a la base de datos
+[services.web.variables]
+DATABASE_URL = { fromService = "postgres", name = "DATABASE_URL" }

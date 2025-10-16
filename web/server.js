@@ -20,7 +20,15 @@ const dbToUse = isProduction ? sqliteDb : db;
 
 // Inicializar base de datos PostgreSQL en producción
 if (isProduction) {
-  initializeDatabase().catch(console.error);
+  console.log('🔧 Inicializando base de datos PostgreSQL...');
+  initializeDatabase()
+    .then(() => {
+      console.log('✅ Base de datos PostgreSQL inicializada correctamente');
+    })
+    .catch((error) => {
+      console.error('❌ Error inicializando PostgreSQL:', error.message);
+      console.log('⚠️  Continuando sin base de datos (modo fallback)');
+    });
 }
 
 // Middleware
