@@ -728,6 +728,84 @@ app.post('/api/test-gemini', async (req, res) => {
   }
 });
 
+// API de diagnóstico profundo del servicio de IA
+app.get('/api/deep-debug-ai', (req, res) => {
+  try {
+    console.log('🔍 Diagnóstico profundo del servicio de IA...');
+    
+    // Información del servicio actual
+    const serviceInfo = {
+      hasApiKey: !!aiGeminiService.apiKey,
+      apiKeyLength: aiGeminiService.apiKey ? aiGeminiService.apiKey.length : 0,
+      hasGenAI: !!aiGeminiService.genAI,
+      hasModelInstance: !!aiGeminiService.modelInstance,
+      model: aiGeminiService.model,
+      temperature: aiGeminiService.temperature,
+      maxTokens: aiGeminiService.maxTokens
+    };
+    
+    // Información de las variables de entorno
+    const envInfo = {
+      GEMINI_API_KEY_present: !!process.env.GEMINI_API_KEY,
+      GEMINI_API_KEY_length: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
+      GEMINI_API_KEY_first_10: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) : 'N/A',
+      GEMINI_API_KEY_last_10: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(process.env.GEMINI_API_KEY.length - 10) : 'N/A',
+      GEMINI_MODEL: process.env.GEMINI_MODEL || 'default',
+      NODE_ENV: process.env.NODE_ENV,
+      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
+    };
+    
+    // Verificar configuración paso a paso
+    const stepByStep = {
+      step1_env_var_exists: !!process.env.GEMINI_API_KEY,
+      step2_api_key_length: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
+      step3_service_has_key: !!aiGeminiService.apiKey,
+      step4_keys_match: process.env.GEMINI_API_KEY === aiGeminiService.apiKey,
+      step5_has_genai: !!aiGeminiService.genAI,
+      step6_has_model: !!aiGeminiService.modelInstance,
+      step7_is_configured: aiGeminiService.isConfigured()
+    };
+    
+    // Intentar crear una nueva instancia
+    let newInstanceTest = null;
+    try {
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const newGenAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const newModel = newGenAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      newInstanceTest = {
+        success: true,
+        hasGenAI: !!newGenAI,
+        hasModel: !!newModel
+      };
+    } catch (error) {
+      newInstanceTest = {
+        success: false,
+        error: error.message
+      };
+    }
+    
+    const diagnosis = {
+      timestamp: new Date().toISOString(),
+      service_info: serviceInfo,
+      env_info: envInfo,
+      step_by_step: stepByStep,
+      new_instance_test: newInstanceTest,
+      all_env_vars: Object.keys(process.env).filter(key => 
+        key.includes('GEMINI') || 
+        key.includes('RAILWAY') || 
+        key.includes('NODE') ||
+        key.includes('API')
+      )
+    };
+    
+    console.log('🔍 Diagnóstico completo:', JSON.stringify(diagnosis, null, 2));
+    res.json({ success: true, diagnosis });
+  } catch (error) {
+    console.error('❌ Error en diagnóstico profundo:', error);
+    res.status(500).json({ success: false, message: 'Error en diagnóstico: ' + error.message });
+  }
+});
+
 // API de productos (para debugging)
 app.get('/api/products', async (req, res) => {
   try {
