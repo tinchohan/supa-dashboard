@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "start:prod": "NODE_ENV=production node web/server.js",
+    "start:prod": "NODE_ENV=production node web/server-clean.js",
     "sync": "node sync.js",
     "dev": "node --watch index.js",
     "web": "node web/server.js",
