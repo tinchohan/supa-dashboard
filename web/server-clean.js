@@ -953,6 +953,11 @@ app.get('/api/top-products', async (req, res) => {
         // Asegurar que los storeIds sean strings para PostgreSQL
         params.push(...storeIds.map(id => String(id)));
       }
+    } else {
+      // Si no hay storeId, asegurar que sp.store_id sea TEXT para evitar errores de tipo
+      if (isPostgres) {
+        query += ` AND sp.store_id::text IS NOT NULL`;
+      }
     }
     
     query += `
@@ -960,7 +965,7 @@ app.get('/api/top-products', async (req, res) => {
       ORDER BY total_revenue DESC
       LIMIT ${paramPlaceholder}${params.length + 1}
     `;
-    params.push(parseInt(limit));
+    params.push(Number(limit));
 
     console.log('🔧 Query final:', query);
     console.log('🔧 Parámetros:', params);
