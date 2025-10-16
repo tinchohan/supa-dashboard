@@ -980,6 +980,54 @@ app.get('/api/top-products', async (req, res) => {
   }
 });
 
+// Endpoint para migrar esquema PostgreSQL
+app.post('/api/migrate-schema', async (req, res) => {
+  try {
+    console.log('🔄 Iniciando migración del esquema PostgreSQL...');
+    
+    if (!isProduction) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Migración solo disponible en producción' 
+      });
+    }
+    
+    // Verificar estructura actual
+    const tableInfo = await dbToUse.prepare(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'sale_products' 
+      AND table_schema = 'public'
+    `).all();
+    
+    console.log('📊 Estructura actual de sale_products:', tableInfo);
+    
+    // Verificar si id_sale_order es TEXT
+    const idSaleOrderColumn = tableInfo.find(col => col.column_name === 'id_sale_order');
+    if (idSaleOrderColumn && idSaleOrderColumn.data_type !== 'text') {
+      console.log('🔧 Actualizando id_sale_order a TEXT...');
+      await dbToUse.prepare(`
+        ALTER TABLE sale_products 
+        ALTER COLUMN id_sale_order TYPE TEXT
+      `).run();
+      console.log('✅ id_sale_order actualizado a TEXT');
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Esquema migrado correctamente',
+      tableInfo: tableInfo
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en migración:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error en migración: ' + error.message 
+    });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🌐 Servidor web ejecutándose en http://localhost:${PORT}`);
