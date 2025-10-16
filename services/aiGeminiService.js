@@ -87,7 +87,18 @@ class AIGeminiService {
 
   // Análisis avanzado de ventas con IA
   async analyzeSalesWithAI(fromDate, toDate, storeId = null) {
-    if (!this.isConfigured()) {
+    // Verificación directa sin usar isConfigured()
+    const hasApiKey = !!process.env.GEMINI_API_KEY;
+    const hasModel = !!this.modelInstance;
+    const isConfigured = hasApiKey && hasModel;
+    
+    console.log('🔍 Verificación directa en analyzeSalesWithAI:');
+    console.log('- API Key presente:', hasApiKey);
+    console.log('- Model Instance presente:', hasModel);
+    console.log('- Configurado:', isConfigured);
+    
+    if (!isConfigured) {
+      console.log('⚠️ Usando modo fallback en analyzeSalesWithAI');
       return this.getFallbackAnalysis(fromDate, toDate, storeId);
     }
 
@@ -140,8 +151,16 @@ class AIGeminiService {
   // Chat inteligente con contexto de datos
   async chatWithContext(userId, message, fromDate, toDate, storeId = null) {
     console.log('🔍 Verificando configuración en chatWithContext...');
-    const isConfigured = this.isConfigured();
-    console.log('✅ Configurado en chatWithContext:', isConfigured);
+    
+    // Verificación directa sin usar isConfigured()
+    const hasApiKey = !!process.env.GEMINI_API_KEY;
+    const hasModel = !!this.modelInstance;
+    const isConfigured = hasApiKey && hasModel;
+    
+    console.log('✅ Verificación directa:');
+    console.log('- API Key presente:', hasApiKey);
+    console.log('- Model Instance presente:', hasModel);
+    console.log('- Configurado:', isConfigured);
     
     if (!isConfigured) {
       console.log('⚠️ Usando modo fallback en chatWithContext');
