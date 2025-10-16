@@ -359,7 +359,7 @@ app.get('/api/sync/status', (req, res) => {
   });
 });
 
-// API de chat con IA
+// API de chat con IA usando datos reales
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, fromDate = '2025-01-01', toDate = '2025-12-31', storeId = null } = req.body;
@@ -368,45 +368,11 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Mensaje requerido' });
     }
 
-    console.log('🔍 Chat IA - Creando nueva instancia de Gemini...');
+    console.log('🔍 Chat IA - Usando datos reales de la base de datos...');
     
-    // Usar la misma lógica que funciona en test-chat
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const apiKey = process.env.GEMINI_API_KEY;
-    
-    if (!apiKey) {
-      console.log('⚠️ No API key found, usando modo fallback');
-      return res.json({ success: true, response: '🤖 Entiendo tu consulta: "' + message + '". Para respuestas más inteligentes, configura una API key de Gemini.' });
-    }
-    
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      }
-    });
-    
-    // Crear prompt con contexto
-    const contextInfo = storeId ? ` (Tienda: ${storeId})` : '';
-    const prompt = `Eres un asistente de análisis de datos de ventas. Responde de manera útil y profesional en español.
-    
-Contexto:
-- Período: ${fromDate} a ${toDate}${contextInfo}
-- Eres un experto en análisis de datos de ventas de restaurantes Subway
-
-Pregunta del usuario: "${message}"
-
-Responde de manera clara, específica y accionable. Si la pregunta es sobre datos específicos, menciona que necesitarías acceso a la base de datos para dar una respuesta precisa.`;
-    
-    console.log('🤖 Enviando prompt a Gemini...');
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    console.log('✅ Respuesta de Gemini recibida:', text.substring(0, 100) + '...');
-    res.json({ success: true, response: text });
+    // Usar el servicio de IA con datos reales
+    const response = await aiGeminiService.chatWithContext('user', message, fromDate, toDate, storeId);
+    res.json({ success: true, response: response.message });
   } catch (error) {
     console.error('❌ Error en chat IA:', error);
     res.json({ success: true, response: '🤖 Entiendo tu consulta: "' + message + '". Para respuestas más inteligentes, configura una API key de Gemini.' });
