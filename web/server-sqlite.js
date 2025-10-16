@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import Database from 'better-sqlite3';
 import { db as sqliteDb } from '../config/database.js';
 import aiGeminiService from '../services/aiGeminiService.js';
 import MultiStoreSyncService from '../services/multiStoreSyncService-sqlite.js';
@@ -18,7 +19,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Usar SQLite siempre (más simple y flexible)
-const dbToUse = sqliteDb;
+// En Railway, usar la misma ruta que el endpoint de inicialización
+const isRailway = process.env.RAILWAY_ENVIRONMENT === 'production';
+const dbToUse = isRailway ? new Database('/app/data/linisco.db') : sqliteDb;
 
 console.log('🔍 Configuración de servidor SQLite:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
