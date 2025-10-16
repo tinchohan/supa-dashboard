@@ -1300,6 +1300,21 @@
                 // Mostrar indicador de carga
                 showLoadingIndicator();
                 
+                // Primero inicializar la base de datos si es necesario
+                try {
+                    const initResponse = await fetch('/api/init-db', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (initResponse.ok) {
+                        const initData = await initResponse.json();
+                        console.log('✅ Base de datos inicializada:', initData);
+                    }
+                } catch (initError) {
+                    console.warn('⚠️ Error inicializando base de datos:', initError);
+                }
+                
                 await Promise.all([
                     loadStats(),
                     loadProducts()
@@ -2818,6 +2833,26 @@
                 disableAllSyncButtons();
                 
                 // Mostrar indicador de carga
+                syncButton.innerHTML = '⏳ Inicializando base de datos...';
+                
+                // Primero inicializar la base de datos
+                try {
+                    const initResponse = await fetch('/api/init-db', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (initResponse.ok) {
+                        const initData = await initResponse.json();
+                        console.log('✅ Base de datos inicializada:', initData);
+                    } else {
+                        console.warn('⚠️ Error inicializando base de datos, continuando...');
+                    }
+                } catch (initError) {
+                    console.warn('⚠️ Error inicializando base de datos:', initError);
+                }
+                
+                // Cambiar indicador a sincronización
                 syncButton.innerHTML = '⏳ Sincronizando...';
                 
                 // Obtener fechas seleccionadas
