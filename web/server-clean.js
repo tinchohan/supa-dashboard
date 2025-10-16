@@ -2,9 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
 import { db as postgresDb, initializeDatabase } from '../config/database-postgres-clean.js';
-import { db } from '../config/database.js';
+import { db as sqliteDb } from '../config/database.js';
 import aiGeminiService from '../services/aiGeminiService.js';
 import MultiStoreSyncService from '../services/multiStoreSyncService-clean.js';
 
@@ -16,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 // Determinar qué base de datos usar
 const isProduction = process.env.NODE_ENV === 'production';
-const dbToUse = isProduction ? postgresDb : db; // Usar PostgreSQL en producción, SQLite en desarrollo
+const dbToUse = isProduction ? postgresDb : sqliteDb; // Usar PostgreSQL en producción, SQLite en desarrollo
 
 // Inicializar base de datos PostgreSQL en producción
 let dbReady = false;
