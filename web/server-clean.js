@@ -188,6 +188,8 @@ app.post('/api/stats', async (req, res) => {
   try {
     const { fromDate, toDate, storeId } = req.body;
     
+    console.log('🔍 Parámetros de estadísticas:', { fromDate, toDate, storeId });
+    
     let query = `
       SELECT 
         COUNT(DISTINCT so.id) as total_orders,
@@ -202,11 +204,18 @@ app.post('/api/stats', async (req, res) => {
     
     const params = [fromDate || '2025-01-01', toDate || '2025-12-31'];
     
-    if (storeId && storeId.length > 0) {
-      const placeholders = storeId.map((_, i) => `$${i + 3}`).join(',');
-      query += ` AND so.store_id::text IN (${placeholders})`;
-      params.push(...storeId);
+    // Manejar storeId como string o array
+    if (storeId) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map((_, i) => `$${i + 3}`).join(',');
+        query += ` AND so.store_id::text IN (${placeholders})`;
+        params.push(...storeIds);
+      }
     }
+
+    console.log('🔧 Query de estadísticas:', query);
+    console.log('🔧 Parámetros:', params);
 
     const stats = await postgresDb.prepare(query).get(...params);
     res.json({ success: true, data: stats });
@@ -224,6 +233,8 @@ app.get('/api/top-products', async (req, res) => {
 
   try {
     const { fromDate, toDate, storeId, limit = 20 } = req.query;
+    
+    console.log('🔍 Parámetros recibidos:', { fromDate, toDate, storeId, limit });
     
     let query = `
       SELECT 
@@ -243,10 +254,14 @@ app.get('/api/top-products', async (req, res) => {
     
     const params = [fromDate || '2025-01-01', toDate || '2025-12-31'];
     
-    if (storeId && storeId.length > 0) {
-      const placeholders = storeId.map((_, i) => `$${i + 3}`).join(',');
-      query += ` AND sp.store_id::text IN (${placeholders})`;
-      params.push(...storeId);
+    // Manejar storeId como string o array
+    if (storeId) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        const placeholders = storeIds.map((_, i) => `$${i + 3}`).join(',');
+        query += ` AND sp.store_id::text IN (${placeholders})`;
+        params.push(...storeIds);
+      }
     }
     
     query += `
@@ -255,6 +270,9 @@ app.get('/api/top-products', async (req, res) => {
       LIMIT $${params.length + 1}
     `;
     params.push(parseInt(limit));
+
+    console.log('🔧 Query final:', query);
+    console.log('🔧 Parámetros:', params);
 
     const products = await postgresDb.prepare(query).all(...params);
     res.json({ success: true, data: products, total_records: products.length });
