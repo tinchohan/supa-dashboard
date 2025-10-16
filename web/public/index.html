@@ -2824,29 +2824,50 @@
                 const fromDate = document.getElementById('fromDate').value;
                 const toDate = document.getElementById('toDate').value;
                 
-                // Llamar al endpoint de sincronización
+                // Llamar al endpoint de sincronización (ahora responde 202 y corre en background)
                 const response = await fetch('/api/sync', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fromDate: fromDate,
-                        toDate: toDate,
-                        forceSync: false // No forzar para evitar duplicados
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromDate, toDate, forceSync: false })
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Mostrar mensaje de éxito
-                    showSyncMessage(`✅ Sincronización completada: ${data.data.totalRecords} registros`, 'success');
-                    
-                    // Recargar datos automáticamente
-            await loadData();
+
+                // Soportar 202 (Accepted) con polling de estado
+                if (response.status === 202) {
+                    showSyncMessage('⏳ Sincronización iniciada. Esperando a que termine...', 'info');
+
+                    // Polling del estado
+                    const pollStatus = async (maxTries = 120, intervalMs = 2000) => {
+                        for (let i = 0; i < maxTries; i++) {
+                            await new Promise(r => setTimeout(r, intervalMs));
+                            const statusResp = await fetch('/api/sync/status');
+                            const statusData = await statusResp.json();
+                            if (statusData && statusData.status && statusData.status.state === 'success') {
+                                const summary = statusData.status.summary || {};
+                                const total = summary.totalRecords ?? 0;
+                                showSyncMessage(`✅ Sincronización completada: ${total} registros`, 'success');
+                                await loadData();
+                                return;
+                            }
+                            if (statusData && statusData.status && statusData.status.state === 'error') {
+                                const errMsg = statusData.status.error || 'Error desconocido';
+                                showSyncMessage(`❌ Error en sincronización: ${errMsg}`, 'error');
+                                return;
+                            }
+                        }
+                        showSyncMessage('⚠️ La sincronización está tardando más de lo esperado. Intenta nuevamente.', 'warning');
+                    };
+
+                    await pollStatus();
                 } else {
-                    showSyncMessage('❌ Error en la sincronización: ' + data.message, 'error');
+                    // Compatibilidad con respuesta sin background
+                    const data = await response.json();
+                    if (data && data.success && data.data) {
+                        const total = data.data.totalRecords ?? 0;
+                        showSyncMessage(`✅ Sincronización completada: ${total} registros`, 'success');
+                        await loadData();
+                    } else {
+                        showSyncMessage('❌ Error en la sincronización: ' + (data?.message || 'Respuesta inválida'), 'error');
+                    }
                 }
                 
             } catch (error) {
