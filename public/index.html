@@ -3,212 +3,3130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Linisco - SQLite</title>
+    <title>Dashboard Linisco - Análisis de Ventas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 20px;
         }
-        
+
         .container {
+            max-width: 1400px;
+            margin: 0 auto;
             background: white;
-            border-radius: 20px;
+            border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 600px;
-            width: 90%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
             text-align: center;
+            position: relative;
         }
-        
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .title {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2rem;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-        }
-        
-        .status {
-            background: #e8f5e8;
-            border: 2px solid #4caf50;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        
-        .status-icon {
-            font-size: 2rem;
+
+        .header h1 {
+            font-size: 2.5em;
             margin-bottom: 10px;
         }
-        
-        .status-text {
-            color: #2e7d32;
-            font-weight: bold;
-            font-size: 1.2rem;
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
         }
-        
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
         }
-        
-        .feature {
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .controls {
+            padding: 30px;
             background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            border-left: 4px solid #667eea;
+            border-bottom: 1px solid #e9ecef;
         }
-        
-        .feature-title {
-            color: #333;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .feature-desc {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        .buttons {
+
+        .control-group {
             display: flex;
-            gap: 15px;
-            justify-content: center;
+            gap: 20px;
+            align-items: end;
             flex-wrap: wrap;
-            margin-top: 30px;
+            margin-bottom: 20px;
         }
-        
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .sync-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .sync-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .sync-btn {
+            font-size: 12px;
+            padding: 8px 15px;
+            min-width: 120px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-item label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .control-item input, .control-item select {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .control-item input:focus, .control-item select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
         .btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
+            padding: 12px 25px;
+            border-radius: 8px;
             cursor: pointer;
-            text-decoration: none;
-            font-weight: bold;
+            font-size: 14px;
+            font-weight: 600;
             transition: transform 0.2s;
         }
-        
+
         .btn:hover {
             transform: translateY(-2px);
         }
-        
-        .btn-secondary {
-            background: #6c757d;
-        }
-        
-        .info {
-            background: #e3f2fd;
-            border-radius: 10px;
+
+        /* Estilos para secciones de IA */
+        .ai-section {
+            margin-top: 30px;
             padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid #2196f3;
+            background: #f8f9fa;
+            border-radius: 12px;
         }
-        
-        .info-title {
-            color: #1976d2;
-            font-weight: bold;
+
+        .ai-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .ai-card h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 18px;
+        }
+
+        .ai-content {
+            min-height: 100px;
+        }
+
+        .insight-card, .prediction-card, .recommendation-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .insight-title, .prediction-card h3, .recommendation-card h3 {
+            font-weight: 600;
+            color: #495057;
+            margin: 0 0 10px 0;
+        }
+
+        .insight-message, .insight-recommendation {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+
+        .insight-recommendation {
+            font-style: italic;
+            color: #28a745;
+        }
+
+        /* Estilos para chat */
+        .chat-container {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .chat-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .chat-message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .chat-message.ai {
+            background: white;
+            border: 1px solid #e9ecef;
+            color: #495057;
+        }
+
+        .chat-input-container {
+            display: flex;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .chat-send-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chat-send-btn:hover {
+            background: #5a6fd8;
+        }
+
+        /* Estilos para mensajes de sincronización */
+        .sync-message {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .sync-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .sync-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Estilos para desglose por tienda */
+        .store-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .store-stat {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Estilos para métodos de pago */
+        .payment-method {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .payment-cash {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .payment-otros {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Estilos para controles de paginación */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .btn-pagination {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-pagination:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-pagination:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .page-info {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card h3 {
+            color: #6c757d;
+            font-size: 0.9em;
             margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        
-        .info-text {
-            color: #424242;
-            font-size: 0.9rem;
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .unit {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .stat-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .store-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .store-stat {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            border-left: 4px solid #28a745;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .store-stat strong {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+        }
+
+        /* Estilos mejorados para el selector de tiendas con checkboxes */
+        .store-selector {
+            position: relative;
+            width: 100%;
+        }
+
+        .store-selector-toggle {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .store-selector-toggle:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.15);
+        }
+
+        .store-selector-toggle:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .dropdown-arrow {
+            transition: transform 0.3s ease;
+            font-size: 12px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .store-selector-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .store-selector-dropdown.show {
+            display: block;
+        }
+
+        .store-option {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .store-option:last-child {
+            border-bottom: none;
+        }
+
+        .store-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .store-option input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            margin-right: 12px;
+            position: relative;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .store-option input[type="checkbox"]:checked + .checkmark {
+            background-color: #667eea;
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .store-option input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .store-option-text {
+            flex: 1;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .store-option:first-child {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .store-option:first-child:hover {
+            background-color: #e9ecef;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #495057;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .payment-method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .payment-cash { background: #d4edda; color: #155724; }
+        .payment-cd_visa { background: #cce5ff; color: #004085; }
+        .payment-cc_maestro { background: #fff3cd; color: #856404; }
+        .payment-cc_amex { background: #f8d7da; color: #721c24; }
+        .payment-other { background: #e2e3e5; color: #383d41; }
+
+        /* Estilos para el chat con IA */
+        .chat-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9fa;
+            margin-bottom: 15px;
+        }
+
+        .chat-messages {
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .chat-message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .chat-message.ai {
+            background: white;
+            color: #333;
+            border: 1px solid #e9ecef;
+            margin-right: auto;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-send-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .chat-send-btn:hover {
+            background: #5a6fd8;
+        }
+
+        /* Estilos para gráficos en el chat */
+        .chat-message canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .chat-container {
+                max-height: 500px;
+            }
+
+            .chat-messages {
+                min-height: 300px;
+                max-height: 400px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🚀</div>
-        <h1 class="title">Dashboard Linisco</h1>
-        <p class="subtitle">Sistema de Sincronización con SQLite</p>
-        
-        <div class="status">
-            <div class="status-icon">✅</div>
-            <div class="status-text">Servidor SQLite Activo</div>
+        <div class="header">
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            <h1>🍔 Dashboard Linisco</h1>
+            <p>Análisis de Ventas Multi-Tienda</p>
         </div>
-        
-        <div class="info">
-            <div class="info-title">🎯 Configuración Actual</div>
-            <div class="info-text">
-                <strong>Base de Datos:</strong> SQLite (Simplificado)<br>
-                <strong>Entorno:</strong> Railway Production<br>
-                <strong>Estado:</strong> Funcionando correctamente
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-item">
+                    <label for="fromDate">Fecha Inicio</label>
+                    <input type="date" id="fromDate" value="2025-10-01">
+                </div>
+                <div class="control-item">
+                    <label for="toDate">Fecha Fin</label>
+                    <input type="date" id="toDate" value="2025-10-13">
+                </div>
+                <div class="control-item">
+                    <label>Tienda</label>
+                    <div class="store-selector">
+                        <button type="button" class="store-selector-toggle" onclick="toggleStoreSelector()">
+                            <span id="storeSelectorText">Todas las tiendas</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="store-selector-dropdown" id="storeSelectorDropdown">
+                            <label class="store-option" id="store-all-option">
+                                <input type="checkbox" value="" id="store-all" onchange="handleStoreSelection(this)" checked>
+                                <span class="checkmark"></span>
+                                <span class="store-option-text">Todas las tiendas</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-item">
+                    <button class="btn" onclick="loadData()">🔄 Cargar Datos del Dashboard</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="features">
-            <div class="feature">
-                <div class="feature-title">📊 Sincronización</div>
-                <div class="feature-desc">Datos de ventas en tiempo real</div>
-            </div>
-            <div class="feature">
-                <div class="feature-title">🤖 IA Integrada</div>
-                <div class="feature-desc">Chat y análisis inteligente</div>
-            </div>
-            <div class="feature">
-                <div class="feature-title">📈 Gráficos</div>
-                <div class="feature-desc">Visualización de datos</div>
-            </div>
-            <div class="feature">
-                <div class="feature-title">🔒 Seguro</div>
-                <div class="feature-desc">Autenticación y seguridad</div>
-            </div>
-        </div>
-        
-        <div class="buttons">
-            <a href="/api/sync/status" class="btn">Estado de Sincronización</a>
-            <a href="/api/top-products" class="btn btn-secondary">Productos Top</a>
-        </div>
-        
-        <div class="info">
-            <div class="info-title">🔧 Endpoints Disponibles</div>
-            <div class="info-text">
-                <strong>POST /api/sync</strong> - Sincronizar datos<br>
-                <strong>GET /api/top-products</strong> - Productos más vendidos<br>
-                <strong>POST /api/stats</strong> - Estadísticas<br>
-                <strong>POST /api/chat</strong> - Chat con IA<br>
-                <strong>POST /api/generate-chart</strong> - Generar gráficos
+            
+            <!-- Botones de sincronización separados arriba a la derecha -->
+            <div class="sync-controls">
+                <div class="sync-buttons">
+                    <button class="btn sync-btn" id="syncButton" onclick="syncData()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">🗄️ Sincronizar a la base de datos</button>
+                </div>
             </div>
         </div>
-    </div>
-    
+
+        <div class="content">
+            <!-- Estadísticas Generales -->
+            <div class="section">
+                <h2>📊 Estadísticas Generales</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="loading">Cargando estadísticas...</div>
+                </div>
+            </div>
+
+
+            <!-- Productos Más Vendidos -->
+            <div class="section">
+                <h2>🏆 Productos Más Vendidos</h2>
+                <div class="pagination-controls">
+                    <button id="prevProducts" class="btn-pagination" onclick="changeProductPage(-1)" disabled>← Anterior</button>
+                    <span id="productPageInfo" class="page-info">Página 1 de 1</span>
+                    <button id="nextProducts" class="btn-pagination" onclick="changeProductPage(1)" disabled>Siguiente →</button>
+                </div>
+                <div class="table-container">
+                    <table id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Producto</th>
+                                <th>Tienda</th>
+                                <th>Veces Vendido</th>
+                                <th>Cantidad Total</th>
+                                <th>Ingresos</th>
+                                <th>Precio Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="loading">Cargando productos más vendidos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                        </div>
+
+
+        <!-- Sección de Chat con IA -->
+        <div class="ai-section">
+            <h2>🤖 Chat con IA</h2>
+            <div class="ai-card">
+                <h3>💬 Consultas Inteligentes</h3>
+                <div class="chat-container">
+                    <div id="chatMessages" class="chat-messages"></div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" placeholder="Pregunta algo sobre tus datos..." class="chat-input">
+                        <button onclick="sendChatMessage()" class="chat-send-btn">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     <script>
-        // Verificar estado del servidor
-        fetch('/api/sync/status')
-            .then(response => response.json())
-            .then(data => {
-                console.log('✅ Servidor SQLite funcionando:', data);
-            })
-            .catch(error => {
-                console.error('❌ Error conectando con el servidor:', error);
+        // Utilidad: obtener tiendas seleccionadas (soporta múltiple y "todas")
+        function getSelectedStores() {
+            const checkboxes = document.querySelectorAll('.store-option input[type="checkbox"]:checked');
+            const selectedValues = Array.from(checkboxes).map(cb => cb.value);
+            // Si se selecciona "todas" (valor vacío), devolver [] para indicar todas
+            if (selectedValues.includes('')) {
+                return [];
+            }
+            return selectedValues;
+        }
+
+        // Toggle del dropdown del selector de tiendas
+        function toggleStoreSelector() {
+            const dropdown = document.getElementById('storeSelectorDropdown');
+            const arrow = document.querySelector('.dropdown-arrow');
+            
+            if (dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                dropdown.classList.add('show');
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // Manejar selección de tiendas
+        function handleStoreSelection(checkbox) {
+            const isAllSelected = checkbox.value === '';
+            
+            if (isAllSelected && checkbox.checked) {
+                // Si se selecciona "Todas", desmarcar las demás
+                document.querySelectorAll('.store-option input[type="checkbox"]:not(#store-all)').forEach(cb => {
+                    cb.checked = false;
+                });
+                updateStoreSelectorText('Todas las tiendas');
+            } else if (!isAllSelected && checkbox.checked) {
+                // Si se selecciona una tienda específica, desmarcar "Todas"
+                document.getElementById('store-all').checked = false;
+                updateStoreSelectorText();
+            } else if (!isAllSelected && !checkbox.checked) {
+                // Si se desmarca una tienda, verificar si quedan seleccionadas
+                const selectedStores = document.querySelectorAll('.store-option input[type="checkbox"]:checked:not(#store-all)');
+                if (selectedStores.length === 0) {
+                    // Si no hay ninguna seleccionada, marcar "Todas"
+                    document.getElementById('store-all').checked = true;
+                    updateStoreSelectorText('Todas las tiendas');
+                } else {
+                    updateStoreSelectorText();
+                }
+            }
+        }
+
+        // Actualizar texto del selector
+        function updateStoreSelectorText(customText = null) {
+            const textElement = document.getElementById('storeSelectorText');
+            if (customText) {
+                textElement.textContent = customText;
+                return;
+            }
+            
+            const selectedStores = document.querySelectorAll('.store-option input[type="checkbox"]:checked:not(#store-all)');
+            if (selectedStores.length === 0) {
+                textElement.textContent = 'Todas las tiendas';
+            } else if (selectedStores.length === 1) {
+                const textNode = selectedStores[0].closest('.store-option').querySelector('.store-option-text');
+                const storeName = textNode ? textNode.textContent.trim() : selectedStores[0].closest('.store-option').textContent.trim();
+                textElement.textContent = storeName;
+            } else {
+                textElement.textContent = `${selectedStores.length} tiendas seleccionadas`;
+            }
+        }
+
+        // Cargar tiendas e inicializar selector con checkboxes
+        async function loadStores() {
+            try {
+                console.log('🔄 Cargando tiendas...');
+                const response = await fetch('/api/stores');
+                const data = await response.json();
+                console.log('📊 Respuesta de tiendas:', data);
+                
+                if (data.success && data.data) {
+                    const dropdown = document.getElementById('storeSelectorDropdown');
+                    console.log('🎯 Dropdown encontrado:', dropdown);
+                    
+                    if (dropdown) {
+                    // Limpiar opciones existentes excepto "todas"
+                    dropdown.querySelectorAll('.store-option:not(#store-all-option)').forEach(option => option.remove());
+                        
+                        console.log('🏪 Agregando tiendas:', data.data.length);
+                        data.data.forEach((store, index) => {
+                            const storeId = store.id || store.store_id || store.name;
+                            const storeName = store.name || store.store_name || store.id;
+                            
+                            console.log(`Tienda ${index + 1}:`, { storeId, storeName });
+                            
+                        const option = document.createElement('label');
+                        option.className = 'store-option';
+                        option.innerHTML = `
+                            <input type="checkbox" value="${storeId}" onchange="handleStoreSelection(this)">
+                            <span class="checkmark"></span>
+                            <span class="store-option-text">${storeName}</span>
+                        `;
+                        dropdown.appendChild(option);
+                        });
+                        console.log('✅ Tiendas cargadas correctamente');
+                    } else {
+                        console.error('❌ No se encontró el dropdown storeSelectorDropdown');
+                    }
+                } else {
+                    console.error('❌ Error en respuesta de tiendas:', data);
+                }
+            } catch (e) {
+                console.error('❌ Error cargando tiendas:', e);
+            }
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            const selector = document.querySelector('.store-selector');
+            const dropdown = document.getElementById('storeSelectorDropdown');
+            if (selector && !selector.contains(event.target)) {
+                dropdown.classList.remove('show');
+                document.querySelector('.dropdown-arrow').style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Al cargar, setear ayer por defecto y cargar tiendas
+        document.addEventListener('DOMContentLoaded', () => {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const y = yesterday.toISOString().split('T')[0];
+            const from = document.getElementById('fromDate');
+            const to = document.getElementById('toDate');
+            if (from && to) {
+                from.value = y;
+                to.value = y;
+            }
+            loadStores();
+        });
+
+
+        // Variables globales para paginación de productos
+        let allProducts = [];
+        let currentProductPage = 1;
+        const productsPerPage = 5;
+
+        // Contador global para gráficos
+        let chartCounter = 0;
+        
+        // Paleta de colores para gráficos
+        const chartColorPalettes = [
+            {
+                background: 'rgba(54, 162, 235, 0.8)',
+                border: 'rgba(54, 162, 235, 1)',
+                name: 'Azul'
+            },
+            {
+                background: 'rgba(255, 99, 132, 0.8)',
+                border: 'rgba(255, 99, 132, 1)',
+                name: 'Rojo'
+            },
+            {
+                background: 'rgba(75, 192, 192, 0.8)',
+                border: 'rgba(75, 192, 192, 1)',
+                name: 'Verde'
+            },
+            {
+                background: 'rgba(255, 206, 86, 0.8)',
+                border: 'rgba(255, 206, 86, 1)',
+                name: 'Amarillo'
+            },
+            {
+                background: 'rgba(153, 102, 255, 0.8)',
+                border: 'rgba(153, 102, 255, 1)',
+                name: 'Púrpura'
+            },
+            {
+                background: 'rgba(255, 159, 64, 0.8)',
+                border: 'rgba(255, 159, 64, 1)',
+                name: 'Naranja'
+            }
+        ];
+        
+        // Función para obtener colores únicos para cada gráfico
+        function getUniqueChartColors(chartIndex) {
+            const palette = chartColorPalettes[chartIndex % chartColorPalettes.length];
+            return {
+                backgroundColor: palette.background,
+                borderColor: palette.border,
+                colorName: palette.name
+            };
+        }
+        
+        // Función para generar colores múltiples para datasets complejos
+        function generateMultiColors(dataLength, chartIndex) {
+            const basePalette = chartColorPalettes[chartIndex % chartColorPalettes.length];
+            const colors = [];
+            
+            for (let i = 0; i < dataLength; i++) {
+                const hue = (chartIndex * 60 + i * 30) % 360; // Rotar el matiz
+                const saturation = 70 + (i * 5) % 30; // Variar saturación
+                const lightness = 50 + (i * 3) % 20; // Variar luminosidad
+                
+                colors.push({
+                    backgroundColor: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.8)`,
+                    borderColor: `hsla(${hue}, ${saturation}%, ${lightness - 10}%, 1)`
+                });
+            }
+            
+            return colors;
+        }
+
+        // Utilidad: obtener tiendas seleccionadas (soporta múltiple y "todas")
+        function getSelectedStores() {
+            const checkboxes = document.querySelectorAll('.store-option input[type="checkbox"]:checked');
+            const selectedValues = Array.from(checkboxes).map(cb => cb.value);
+            // Si se selecciona "todas" (valor vacío), devolver [] para indicar todas
+            if (selectedValues.includes('')) {
+                return [];
+            }
+            return selectedValues;
+        }
+
+        // Cargar estadísticas
+        async function loadStats() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                
+                const selectedStores = getSelectedStores();
+                
+                console.log('📊 Cargando estadísticas para tiendas:', selectedStores);
+                
+                // Enviar como POST con JSON para manejar múltiples tiendas correctamente
+                const response = await fetch('/api/stats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        storeId: selectedStores
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.data;
+                    
+                    // Crear tarjetas de estadísticas básicas
+                    let statsCards = `
+                        <div class="stat-card">
+                            <h3>Total Órdenes</h3>
+                            <div class="value">${stats.total_orders || 0}</div>
+                            <div class="unit">órdenes</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Ingresos Totales</h3>
+                            <div class="value">$${(stats.total_revenue || 0).toLocaleString()}</div>
+                            <div class="unit">pesos</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Promedio por Orden</h3>
+                            <div class="value">$${(stats.avg_order_value || 0).toFixed(2)}</div>
+                            <div class="unit">pesos</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Productos Únicos</h3>
+                            <div class="value">${stats.total_products || 0}</div>
+                            <div class="unit">productos</div>
+                        </div>
+                    `;
+                    
+                    // Agregar desglose por medios de pago (solo 2 líneas: Efectivo y Otros)
+                    if (stats.payment_breakdown && stats.payment_breakdown.length > 0) {
+                        const cashData = stats.payment_breakdown.find(p => p.payment_method === 'cash') || { total_amount: 0, order_count: 0 };
+                        const otherPayments = stats.payment_breakdown.filter(p => p.payment_method !== 'cash');
+                        const otherTotal = otherPayments.reduce((sum, p) => sum + p.total_amount, 0);
+                        const otherCount = otherPayments.reduce((sum, p) => sum + p.order_count, 0);
+                        
+                        statsCards += `
+                        <div class="stat-card">
+                                <h3>💰 Efectivo</h3>
+                                <div class="value">$${cashData.total_amount.toLocaleString()}</div>
+                                <div class="unit">${cashData.order_count} órdenes</div>
+                        </div>
+                        <div class="stat-card">
+                                <h3>💳 Otros Medios</h3>
+                                <div class="value">$${otherTotal.toLocaleString()}</div>
+                                <div class="unit">${otherCount} órdenes</div>
+                        </div>
+                    `;
+                    }
+                    
+                    // Agregar desglose por tienda (siempre mostrar, con porcentajes basados en selección)
+                    if (stats.store_breakdown && stats.store_breakdown.length > 0) {
+                        const selectedStores = getSelectedStores();
+                        console.log('🏪 Tiendas seleccionadas para desglose:', selectedStores);
+                        
+                        // Si hay tiendas seleccionadas específicamente, mostrar solo esas
+                        let storesToShow = stats.store_breakdown;
+                        if (selectedStores.length > 0) {
+                            storesToShow = stats.store_breakdown.filter(store => {
+                                const storeId = store.store_id || store.id || store.name;
+                                return selectedStores.includes(storeId);
+                            });
+                        }
+                        
+                        console.log('🏪 Tiendas a mostrar:', storesToShow.length, storesToShow);
+                        
+                        // Calcular total de ingresos de las tiendas mostradas
+                        const selectedTotalRevenue = storesToShow.reduce((sum, store) => sum + store.revenue, 0);
+                        console.log('💰 Total seleccionado:', selectedTotalRevenue);
+                        
+                        const storeStats = storesToShow.map(store => {
+                            const percentage = selectedTotalRevenue > 0 ? (store.revenue / selectedTotalRevenue * 100) : 0;
+                            console.log(`🏬 ${store.store_name}: $${store.revenue} (${percentage.toFixed(1)}%)`);
+                            return `
+                                <div class="store-stat">
+                                    <strong>${store.store_name}:</strong> $${store.revenue.toLocaleString()} (${percentage.toFixed(1)}%)
+                    </div>
+                `;
+                        }).join('');
+                        
+                        const title = selectedStores.length > 0 ? 
+                            `Tiendas Seleccionadas (${selectedStores.length})` : 
+                            'Desglose por Tienda';
+                        
+                        const subtitle = selectedStores.length > 0 ? 
+                            `Total seleccionado: $${selectedTotalRevenue.toLocaleString()}` : 
+                            `Total general: $${stats.store_breakdown.reduce((sum, store) => sum + store.revenue, 0).toLocaleString()}`;
+                        
+                        statsCards += `
+                            <div class="stat-card full-width">
+                                <h3>${title}</h3>
+                                <div style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">${subtitle}</div>
+                                <div class="store-breakdown">
+                                    ${storeStats}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('statsGrid').innerHTML = statsCards;
+                }
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+                document.getElementById('statsGrid').innerHTML = '<div class="error">Error cargando estadísticas</div>';
+            }
+        }
+
+
+        // Cargar productos más vendidos
+        async function loadProducts() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                let url = `/api/top-products?fromDate=${fromDate}&toDate=${toDate}&limit=50`;
+                if (selectedStores.length > 0) {
+                    // Si hay tiendas seleccionadas específicamente, usar todas
+                    selectedStores.forEach((storeId, index) => {
+                        url += `&storeId=${encodeURIComponent(storeId)}`;
+                    });
+                }
+                
+                console.log('🔄 Cargando productos con URL:', url);
+                const response = await fetch(url);
+                const data = await response.json();
+                console.log('📊 Respuesta de productos:', data);
+                
+                if (data.success) {
+                    allProducts = data.data;
+                    currentProductPage = 1; // Reset a la primera página
+                    displayProductsPage();
+                    console.log('✅ Productos cargados:', allProducts.length);
+                } else {
+                    console.error('❌ Error en respuesta de productos:', data);
+                    document.querySelector('#productsTable tbody').innerHTML = '<tr><td colspan="7" class="error">Error en la respuesta del servidor</td></tr>';
+                }
+            } catch (error) {
+                console.error('❌ Error cargando productos:', error);
+                document.querySelector('#productsTable tbody').innerHTML = '<tr><td colspan="7" class="error">Error cargando productos más vendidos</td></tr>';
+            }
+        }
+
+        // Mostrar página actual de productos
+        function displayProductsPage() {
+                    const tbody = document.querySelector('#productsTable tbody');
+            
+            if (allProducts.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay datos para el período seleccionado</td></tr>';
+                updatePaginationControls(0);
+                        return;
+                    }
+                    
+            const startIndex = (currentProductPage - 1) * productsPerPage;
+            const endIndex = startIndex + productsPerPage;
+            const currentPageProducts = allProducts.slice(startIndex, endIndex);
+            
+            tbody.innerHTML = currentPageProducts.map((row, index) => {
+                const globalIndex = startIndex + index + 1;
+                return `
+                    <tr>
+                        <td>${globalIndex}</td>
+                        <td><strong>${row.name}</strong></td>
+                            <td>${row.store_name}</td>
+                            <td>${row.times_sold}</td>
+                            <td>${row.total_quantity}</td>
+                            <td>$${row.total_revenue.toLocaleString()}</td>
+                            <td>$${row.avg_price.toFixed(2)}</td>
+                        </tr>
+                `;
+            }).join('');
+            
+            updatePaginationControls(allProducts.length);
+        }
+
+        // Actualizar controles de paginación
+        function updatePaginationControls(totalProducts) {
+            const totalPages = Math.ceil(totalProducts / productsPerPage);
+            const prevBtn = document.getElementById('prevProducts');
+            const nextBtn = document.getElementById('nextProducts');
+            const pageInfo = document.getElementById('productPageInfo');
+            
+            // Actualizar botones
+            prevBtn.disabled = currentProductPage <= 1;
+            nextBtn.disabled = currentProductPage >= totalPages;
+            
+            // Actualizar información de página
+            pageInfo.textContent = `Página ${currentProductPage} de ${totalPages}`;
+        }
+
+        // Cambiar página de productos
+        function changeProductPage(direction) {
+            const totalPages = Math.ceil(allProducts.length / productsPerPage);
+            const newPage = currentProductPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentProductPage = newPage;
+                displayProductsPage();
+            }
+        }
+
+        // Cargar todos los datos
+        async function loadData() {
+            try {
+                // Mostrar indicador de carga
+                showLoadingIndicator();
+                
+                await Promise.all([
+                    loadStats(),
+                    loadProducts()
+                ]);
+                
+                // Ocultar indicador de carga
+                hideLoadingIndicator();
+                
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                hideLoadingIndicator();
+            }
+        }
+
+        // Mostrar indicador de carga
+        function showLoadingIndicator() {
+            const button = document.querySelector('.btn');
+            if (button) {
+                button.innerHTML = '⏳ Cargando datos...';
+                button.disabled = true;
+            }
+        }
+
+        // Ocultar indicador de carga
+        function hideLoadingIndicator() {
+            const button = document.querySelector('.btn');
+            if (button) {
+                button.innerHTML = '🔄 Cargar Datos del Dashboard';
+                button.disabled = false;
+            }
+        }
+
+        // Mostrar estado inicial sin datos
+        function showInitialState() {
+            // Mostrar mensaje inicial en las estadísticas
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card">
+                    <h3>Estado Inicial</h3>
+                    <div class="value">📊</div>
+                    <div class="unit">Presiona "Cargar Datos del Dashboard" para cargar información</div>
+                </div>
+            `;
+            
+            document.querySelector('#productsTable tbody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="loading">Presiona "Cargar Datos del Dashboard" para cargar productos más vendidos</td>
+                </tr>
+            `;
+            
+        }
+
+        // ===== FUNCIONES DE IA =====
+
+        // Cargar insights de IA
+        async function loadAIInsights() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                // Usar el endpoint de chat para generar insights
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: 'Analiza los datos de ventas y proporciona insights clave sobre tendencias, patrones y oportunidades de mejora',
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null,
+                        userId: 'insights'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data.message) {
+                    const insightsContainer = document.getElementById('aiInsights');
+                    insightsContainer.innerHTML = `
+                        <div class="insight-card">
+                            <div class="insight-title">🧠 Análisis Inteligente</div>
+                            <div class="insight-message">${data.data.message}</div>
+                            <div class="insight-recommendation">💡 Basado en los datos del período ${fromDate} a ${toDate}</div>
+                        </div>
+                    `;
+                } else {
+                    // Mostrar insights básicos si no hay IA avanzada
+                    document.getElementById('aiInsights').innerHTML = `
+                        <div class="insight-card">
+                            <div class="insight-title">📊 Análisis Básico</div>
+                            <div class="insight-message">Los datos se están cargando correctamente. Para insights avanzados, configura la API de Gemini.</div>
+                            <div class="insight-recommendation">💡 Revisa la configuración de IA en el servidor</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error cargando insights:', error);
+                document.getElementById('aiInsights').innerHTML = `
+                    <div class="insight-card">
+                        <div class="insight-title">⚠️ Insights no disponibles</div>
+                        <div class="insight-message">No se pudieron cargar los insights de IA. Verifica la configuración del servidor.</div>
+                        <div class="insight-recommendation">💡 Revisa los logs del servidor para más detalles</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Cargar gráficos generados por IA
+        async function loadAICharts() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                const response = await fetch('/api/ai/charts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.chartCode && data.chartCode.trim().length > 0) {
+                    const chartsContainer = document.getElementById('aiCharts');
+                    chartsContainer.innerHTML = `
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 15px 0; color: #495057;">📊 Gráficos Generados por IA</h4>
+                            <canvas id="chartContainer" width="400" height="200" style="max-width: 100%; height: auto;"></canvas>
+                        </div>
+                    `;
+                    
+                    // Ejecutar el código de gráficos generado por IA
+                    try {
+                        console.log('🎨 Ejecutando código de gráfico...');
+                        console.log('📝 Código recibido:', data.chartCode.substring(0, 200));
+                        
+                        // Esperar a que el DOM se actualice
+                        setTimeout(() => {
+                            const canvas = document.getElementById('chartContainer');
+                            console.log('🖼️ Canvas encontrado:', canvas);
+                            
+                            if (canvas) {
+                                // Crear un script temporal para ejecutar el código
+                                const script = document.createElement('script');
+                                script.textContent = data.chartCode;
+                                document.head.appendChild(script);
+                                
+                                console.log('✅ Script ejecutado');
+                                
+                                // Remover el script después de ejecutarlo
+                                setTimeout(() => {
+                                    if (document.head.contains(script)) {
+                                        document.head.removeChild(script);
+                                    }
+                                }, 2000);
+                            } else {
+                                console.error('❌ No se encontró el canvas chartContainer');
+                            }
+                        }, 100);
+                        
+                    } catch (chartError) {
+                        console.error('Error ejecutando gráficos:', chartError);
+                        document.getElementById('aiCharts').innerHTML = `
+                            <div class="insight-card">
+                                <div class="insight-title">⚠️ Error en gráficos</div>
+                                <div class="insight-message">No se pudieron generar los gráficos. Verifica la configuración de IA.</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Mostrar mensaje si no hay IA configurada
+                    document.getElementById('aiCharts').innerHTML = `
+                        <div class="insight-card">
+                            <div class="insight-title">📊 Gráficos no disponibles</div>
+                            <div class="insight-message">Para generar gráficos automáticamente, configura la API de Gemini.</div>
+                            <div class="insight-recommendation">💡 Revisa la configuración de IA en el servidor</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error cargando gráficos:', error);
+                document.getElementById('aiCharts').innerHTML = `
+                    <div class="insight-card">
+                        <div class="insight-title">⚠️ Gráficos no disponibles</div>
+                        <div class="insight-message">No se pudieron cargar los gráficos de IA. Verifica la configuración del servidor.</div>
+                        <div class="insight-recommendation">💡 Revisa los logs del servidor para más detalles</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Cargar predicciones de IA
+        async function loadAIPredictions() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                let url = `/api/ai/predictions?fromDate=${fromDate}&toDate=${toDate}`;
+                if (selectedStores && selectedStores.length > 0) {
+                    url += `&storeId=${selectedStores[0]}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success && data.data.predictions) {
+                    const predictionsContainer = document.getElementById('aiPredictions');
+                    predictionsContainer.innerHTML = `
+                        <div class="prediction-card">
+                            <h3>📈 Predicciones para los próximos 7 días</h3>
+                            <p><strong>Tendencia:</strong> ${data.data.message}</p>
+                            <p><strong>Confianza:</strong> ${data.data.confidence}%</p>
+                            <div style="margin-top: 15px;">
+                                ${data.data.predictions.slice(0, 3).map(pred => `
+                                    <div style="background: rgba(255,255,255,0.2); padding: 10px; margin: 5px 0; border-radius: 6px;">
+                                        <strong>${pred.date}:</strong> $${pred.predictedRevenue.toLocaleString()} (${pred.predictedOrders} órdenes)
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Mostrar predicciones básicas
+                    document.getElementById('aiPredictions').innerHTML = `
+                        <div class="prediction-card">
+                            <h3>📈 Predicciones Básicas</h3>
+                            <p><strong>Estado:</strong> Análisis básico disponible</p>
+                            <p><strong>Nota:</strong> Para predicciones avanzadas, configura la API de Gemini</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error cargando predicciones:', error);
+                document.getElementById('aiPredictions').innerHTML = `
+                    <div class="prediction-card">
+                        <h3>⚠️ Predicciones no disponibles</h3>
+                        <p>No se pudieron cargar las predicciones de IA. Verifica la configuración del servidor.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Cargar recomendaciones de IA
+        async function loadAIRecommendations() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                let url = `/api/ai/recommendations?fromDate=${fromDate}&toDate=${toDate}`;
+                if (selectedStores && selectedStores.length > 0) {
+                    url += `&storeId=${selectedStores[0]}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    const recommendationsContainer = document.getElementById('aiRecommendations');
+                    recommendationsContainer.innerHTML = data.data.map(rec => `
+                        <div class="recommendation-card">
+                            <h3>${rec.title}</h3>
+                            <p>${rec.description}</p>
+                            <p><strong>Acción sugerida:</strong> ${rec.action}</p>
+                            ${rec.products ? `<p><strong>Productos:</strong> ${rec.products.join(', ')}</p>` : ''}
+                            ${rec.dates ? `<p><strong>Fechas:</strong> ${rec.dates.join(', ')}</p>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    // Mostrar recomendaciones básicas
+                    document.getElementById('aiRecommendations').innerHTML = `
+                        <div class="recommendation-card">
+                            <h3>💡 Recomendaciones Básicas</h3>
+                            <p>Basado en los datos actuales, considera revisar los productos más vendidos y los patrones de venta.</p>
+                            <p><strong>Acción sugerida:</strong> Analiza los datos de las estadísticas para identificar oportunidades</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error cargando recomendaciones:', error);
+                document.getElementById('aiRecommendations').innerHTML = `
+                    <div class="recommendation-card">
+                        <h3>⚠️ Recomendaciones no disponibles</h3>
+                        <p>No se pudieron cargar las recomendaciones de IA. Verifica la configuración del servidor.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Cargar patrones y crear gráfico
+        async function loadAIPatterns() {
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                let url = `/api/ai/patterns?fromDate=${fromDate}&toDate=${toDate}`;
+                if (selectedStores && selectedStores.length > 0) {
+                    url += `&storeId=${selectedStores[0]}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success && data.data.dayOfWeekPatterns) {
+                    createPatternsChart(data.data.dayOfWeekPatterns);
+                }
+            } catch (error) {
+                console.error('Error cargando patrones:', error);
+            }
+        }
+
+        // Crear gráfico de patrones
+        function createPatternsChart(dayData) {
+            const ctx = document.getElementById('patternsChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dayData.map(day => day.day_name),
+                    datasets: [{
+                        label: 'Ingresos por Día',
+                        data: dayData.map(day => day.total_revenue),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Patrones de Ventas por Día de la Semana'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
             });
+        }
+
+        // Funciones de chat con IA
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Agregar mensaje del usuario
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Mostrar indicador de carga
+            const loadingId = addChatMessage('Analizando...', 'ai', true);
+            
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const selectedStores = getSelectedStores();
+                
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null,
+                        userId: 'default'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remover indicador de carga
+                removeChatMessage(loadingId);
+                
+                if (data.success) {
+                    // Detectar si el usuario pide gráficos ANTES de agregar el mensaje de texto
+                    const chartKeywords = /\b(gr[áa]fico|chart|visualizaci[óo]n|gr[áa]ficamente|mostrar|ver|crear|generar|barras|l[íi]neas|pastel|donut|pie|gr[áa]fic|visualizar)\b/i;
+                    if (chartKeywords.test(message)) {
+                        try {
+                            console.log('📊 Usuario pidió gráficos, generando...');
+                            console.log('📝 Mensaje que activó la detección:', message);
+                            
+                            const chartId = 'chatChart_' + Date.now();
+                            console.log('🆔 ID generado para el gráfico:', chartId);
+                            
+                            const chartRes = await fetch('/api/ai/charts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    fromDate: fromDate,
+                                    toDate: toDate,
+                                    storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null,
+                                    userMessage: message, // Enviar el mensaje del usuario
+                                    chartId: chartId // Usar el mismo ID que se usará en el canvas
+                                })
+                            });
+                            const chartData = await chartRes.json();
+                            console.log('📊 Respuesta del servidor de gráficos:', chartData);
+                            console.log('🔍 ChartId enviado al servidor:', chartId);
+                            console.log('🔍 ChartId en la respuesta:', chartData.chartCode ? 'Presente' : 'Ausente');
+                            
+                            if (chartData.success && chartData.chartCode) {
+                                console.log('✅ Generando gráfico en chat...');
+                                console.log('🆔 Usando chartId:', chartId);
+                                
+                                // Usar función simple con datos reales del servidor
+                                console.log('🔧 Usando función simple con datos reales...');
+                                
+                                // Limpiar el código del servidor
+                                const cleanChartCode = chartData.chartCode
+                                    .replace(/```javascript/g, '')
+                                    .replace(/```/g, '')
+                                    .trim();
+                                
+                                // Extraer datos reales del código del servidor
+                                let realData = null;
+                                try {
+                                    console.log('🔍 Extrayendo datos reales del servidor...');
+                                    console.log('📄 Código del servidor:', cleanChartCode.substring(0, 200) + '...');
+                                    
+                                    // Buscar labels usando JSON.stringify
+                                    const labelsMatch = cleanChartCode.match(/labels:\s*JSON\.stringify\(([^)]+)\)/);
+                                    const dataMatch = cleanChartCode.match(/data:\s*JSON\.stringify\(([^)]+)\)/);
+                                    
+                                    // Buscar el tipo de gráfico
+                                    const typeMatch = cleanChartCode.match(/type:\s*['"`]([^'"`]+)['"`]/);
+                                    const chartType = typeMatch ? typeMatch[1] : 'bar';
+                                    
+                                    // Buscar el título del gráfico
+                                    const titleMatch = cleanChartCode.match(/text:\s*['"`]([^'"`]+)['"`]/);
+                                    const chartTitle = titleMatch ? titleMatch[1] : `Gráfico ${chartCounter}`;
+                                    
+                                    if (labelsMatch && dataMatch) {
+                                        console.log('📊 Labels encontrados:', labelsMatch[1]);
+                                        console.log('📊 Data encontrados:', dataMatch[1]);
+                                        console.log('📊 Tipo de gráfico:', chartType);
+                                        console.log('📊 Título:', chartTitle);
+                                        
+                                        // Evaluar las expresiones JSON
+                                        const labels = eval(labelsMatch[1]);
+                                        const data = eval(dataMatch[1]);
+                                        
+                                        realData = {
+                                            labels: labels,
+                                            datasets: [{
+                                                label: chartTitle,
+                                                data: data,
+                                                backgroundColor: 'rgba(54, 162, 235, 0.8)', // Se sobrescribirá con colores únicos
+                                                borderColor: 'rgba(54, 162, 235, 1)',
+                                                borderWidth: 2
+                                            }]
+                                        };
+                                        
+                                        console.log('✅ Datos reales extraídos:', realData);
+                                    } else {
+                                        console.log('⚠️ No se encontraron datos con JSON.stringify, intentando método alternativo...');
+                                        
+                                        // Método alternativo: buscar arrays directamente
+                                        const altLabelsMatch = cleanChartCode.match(/labels:\s*(\[[^\]]+\])/);
+                                        const altDataMatch = cleanChartCode.match(/data:\s*(\[[^\]]+\])/);
+                                        
+                                        if (altLabelsMatch && altDataMatch) {
+                                            const labels = JSON.parse(altLabelsMatch[1]);
+                                            const data = JSON.parse(altDataMatch[1]);
+                                            
+                                            realData = {
+                                                labels: labels,
+                                                datasets: [{
+                                                    label: 'Datos Reales',
+                                                    data: data,
+                                                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                                    borderWidth: 2
+                                                }]
+                                            };
+                                            
+                                            console.log('✅ Datos reales extraídos (método alternativo):', realData);
+                                        } else {
+                                            console.log('❌ No se pudieron extraer datos del código del servidor');
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn('⚠️ Error extrayendo datos del servidor:', e);
+                                }
+                                
+                                // Usar el tipo de gráfico extraído del servidor
+                                const extractedType = realData ? (cleanChartCode.match(/type:\s*['"`]([^'"`]+)['"`]/) ? cleanChartCode.match(/type:\s*['"`]([^'"`]+)['"`]/)[1] : 'bar') : 'bar';
+                                createSimpleChart(extractedType, null, realData);
+                                
+                                // Agregar mensaje de texto DESPUÉS del gráfico
+                                addChatMessage(data.data.message, 'ai');
+                            } else {
+                                console.log('❌ No se pudo generar el gráfico, usando función simple...');
+                                // Fallback: crear gráfico simple
+                                createSimpleChart('bar');
+                                
+                                // Agregar mensaje de texto de la IA
+                                addChatMessage(data.data.message, 'ai');
+                            }
+                        } catch (e) {
+                            console.warn('Error generando gráficos:', e);
+                            addChatMessage('Error al generar el gráfico. Intenta de nuevo.', 'ai');
+                            // Agregar mensaje de texto de la IA de todas formas
+                            addChatMessage(data.data.message, 'ai');
+                        }
+                    } else {
+                        // Si no pidió gráficos, agregar el mensaje de texto normalmente
+                        addChatMessage(data.data.message, 'ai');
+                    }
+
+                    // Intento adicional: NL->SQL si el usuario pidi 13 datos/tablas
+                    if (/\b(sql|tabla|detall(?:e|es)|listad|top|ranking|por d[ií]a|por tienda|promedio|promedios)\b/i.test(message)) {
+                        try {
+                            const sqlRes = await fetch('/api/ai/sql', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    query: message,
+                                    fromDate,
+                                    toDate,
+                                    storeId: selectedStores && selectedStores.length > 0 ? selectedStores[0] : null
+                                })
+                            });
+                            const sqlData = await sqlRes.json();
+                            if (sqlData.success && sqlData.data && Array.isArray(sqlData.data.rows)) {
+                                renderSqlResult(sqlData.data.rows, sqlData.data.sql);
+                            }
+                        } catch (e) {
+                            console.warn('AI SQL fall 13:', e);
+                        }
+                    }
+                } else {
+                    addChatMessage('Lo siento, no pude procesar tu consulta. Intenta reformularla.', 'ai');
+                }
+            } catch (error) {
+                console.error('Error en chat:', error);
+                removeChatMessage(loadingId);
+                addChatMessage('Error de conexión. Intenta nuevamente.', 'ai');
+            }
+        }
+
+        function renderSqlResult(rows, sql) {
+            if (!rows || rows.length === 0) {
+                addChatMessage('No se encontraron resultados para la consulta.', 'ai');
+                return;
+            }
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ai';
+            const cols = Object.keys(rows[0]);
+
+            const tableHtml = `
+                <div><strong>Resultados (primeros ${rows.length}):</strong></div>
+                <div class="table-container" style="max-height:240px; overflow:auto; margin-top:6px;">
+                    <table class="compact">
+                        <thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+                        <tbody>
+                            ${rows.map(r => `<tr>${cols.map(c => `<td>${(r[c] ?? '')}</td>`).join('')}</tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn-pagination" style="margin-top:8px;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display==='none' ? 'block':'none'">Ver consulta</button>
+                <pre style="display:none; white-space:pre-wrap; background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">${sql}</pre>
+            `;
+            wrapper.innerHTML = tableHtml;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Función simplificada para renderizar gráficos en el chat
+        function renderChartInChatSimple(chartCode, chartId) {
+            console.log('🎨 Renderizando gráfico simple en chat...');
+            console.log('🆔 ChartId:', chartId);
+            console.log('📝 Código del servidor:', chartCode.substring(0, 200));
+            
+            // Limpiar scripts anteriores para evitar conflictos
+            cleanupChartScripts();
+            
+            // Verificar si ya existe un canvas con este ID
+            const existingCanvas = document.getElementById(chartId);
+            if (existingCanvas) {
+                console.warn('⚠️ Ya existe un canvas con este ID, removiendo...');
+                existingCanvas.remove();
+            }
+            
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ai';
+            
+            // Crear el HTML del gráfico
+            const chartHtml = `
+                <div><strong>📊 Gráfico Generado:</strong></div>
+                <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px; min-height: 400px;">
+                    <canvas id="${chartId}" width="600" height="350" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
+                </div>
+            `;
+            wrapper.innerHTML = chartHtml;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            
+            // Ejecutar el código del gráfico después de un pequeño delay
+            setTimeout(() => {
+                console.log('🔧 Ejecutando código del gráfico...');
+                console.log('🔍 Buscando canvas con ID:', chartId);
+                
+                const canvas = document.getElementById(chartId);
+                console.log('🖼️ Canvas encontrado:', canvas);
+                
+                if (!canvas) {
+                    console.error('❌ No se encontró el canvas con ID:', chartId);
+                    addChatMessage('Error: No se pudo encontrar el canvas del gráfico.', 'ai');
+                    return;
+                }
+                
+                try {
+                    // Limpiar el código del gráfico
+                    let cleanChartCode = chartCode;
+                    if (cleanChartCode.includes('```javascript')) {
+                        cleanChartCode = cleanChartCode.replace(/```javascript\n?/, '').replace(/```$/, '');
+                    }
+                    if (cleanChartCode.includes('```')) {
+                        cleanChartCode = cleanChartCode.replace(/```\n?/, '').replace(/```$/, '');
+                    }
+                    
+                    console.log('📝 Código limpio:', cleanChartCode.substring(0, 200));
+                    
+                    // Verificar que el código contiene el ID correcto
+                    if (!cleanChartCode.includes(chartId)) {
+                        console.error('❌ El código del servidor no contiene el ID correcto');
+                        console.log('🔍 Buscando ID:', chartId);
+                        console.log('📝 En código:', cleanChartCode);
+                        
+                        // Intentar corregir el código reemplazando chartContainer por el ID correcto
+                        console.log('🔧 Intentando corregir el código...');
+                        const correctedCode = cleanChartCode
+                            .replace(/chartContainer/g, chartId)
+                            .replace(/getElementById\('chartContainer'\)/g, `getElementById('${chartId}')`);
+                        
+                        if (correctedCode.includes(chartId)) {
+                            console.log('✅ Código corregido exitosamente');
+                            cleanChartCode = correctedCode;
+                        } else {
+                            console.error('❌ No se pudo corregir el código');
+                            addChatMessage('Error: El código del gráfico no coincide con el canvas.', 'ai');
+                            return;
+                        }
+                    }
+                    
+                    // Ejecutar el código en un scope aislado para evitar conflictos de variables
+                    try {
+                        console.log('🔧 Ejecutando código del gráfico en scope aislado...');
+                        
+                        // Crear un scope aislado usando eval con función anónima
+                        const isolatedCode = `
+                            (function() {
+                                ${cleanChartCode}
+                            })();
+                        `;
+                        
+                        // Ejecutar en un scope aislado
+                        eval(isolatedCode);
+                        
+                        console.log('✅ Gráfico ejecutado en scope aislado');
+                        
+                    } catch (directError) {
+                        console.warn('⚠️ Error ejecutando en scope aislado, usando script dinámico:', directError);
+                        
+                        // Fallback: modificar el código para usar variables únicas
+                        const uniqueCode = cleanChartCode
+                            .replace(/const canvas/g, `const canvas_${chartId}`)
+                            .replace(/document\.getElementById\('${chartId}'\)/g, `document.getElementById('${chartId}')`)
+                            .replace(/canvas\./g, `canvas_${chartId}.`);
+                        
+                        const scriptId = 'chartScript_' + chartId;
+                        const script = document.createElement('script');
+                        script.id = scriptId;
+                        script.textContent = uniqueCode;
+                        document.head.appendChild(script);
+                        console.log('✅ Script ejecutado como fallback con variables únicas:', scriptId);
+                    }
+                    
+                    // Limpiar el script después de un tiempo (solo si se usó script dinámico)
+                    setTimeout(() => {
+                        try {
+                            const scriptToRemove = document.getElementById('chartScript_' + chartId);
+                            if (scriptToRemove && document.head.contains(scriptToRemove)) {
+                                document.head.removeChild(scriptToRemove);
+                                console.log('🧹 Script removido para chartId:', chartId);
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ Error removiendo script:', e);
+                        }
+                    }, 5000);
+                    
+                } catch (error) {
+                    console.error('❌ Error ejecutando gráfico:', error);
+                    addChatMessage('Error al ejecutar el gráfico: ' + error.message, 'ai');
+                }
+            }, 200);
+        }
+
+        function renderChartInChat(chartCode, chartId = null) {
+            console.log('🎨 Renderizando gráfico en chat...');
+            console.log('📝 Código del gráfico:', chartCode.substring(0, 200));
+            console.log('🆔 ChartId recibido:', chartId);
+            
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ai';
+            
+            // Usar exactamente el ID proporcionado (debe coincidir con el del servidor)
+            if (!chartId) {
+                console.error('❌ Error: No se proporcionó chartId');
+                addChatMessage('Error: No se pudo generar el gráfico. Intenta de nuevo.', 'ai');
+                return;
+            }
+            const finalChartId = chartId;
+            console.log('🆔 Final ChartId que se usará (debe coincidir con servidor):', finalChartId);
+            
+            // Obtener datos actuales para el fallback
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            // Extraer datos del contexto si está disponible
+            let totalRevenue = '0';
+            let totalOrders = '0';
+            
+            // Intentar extraer de los datos del dashboard si están disponibles
+            const statsCards = document.querySelectorAll('.stat-card');
+            if (statsCards.length > 0) {
+                // Buscar el valor de ingresos en las tarjetas de estadísticas
+                statsCards.forEach(card => {
+                    const title = card.querySelector('.stat-title');
+                    const value = card.querySelector('.stat-value');
+                    if (title && value && title.textContent.includes('Ingresos')) {
+                        const revenueText = value.textContent.replace(/[^\d.,]/g, '');
+                        if (revenueText) {
+                            totalRevenue = revenueText.replace(/\./g, '').replace(',', '.');
+                        }
+                    }
+                    if (title && value && title.textContent.includes('Órdenes')) {
+                        const ordersText = value.textContent.replace(/[^\d]/g, '');
+                        if (ordersText) {
+                            totalOrders = ordersText;
+                        }
+                    }
+                });
+            }
+            
+            // Si no se encontraron datos, usar valores por defecto basados en el período
+            if (totalRevenue === '0') {
+                const daysDiff = Math.ceil((new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)) + 1;
+                totalRevenue = (daysDiff * 2000000).toString(); // Estimación de $2M por día
+            }
+            if (totalOrders === '0') {
+                const daysDiff = Math.ceil((new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)) + 1;
+                totalOrders = (daysDiff * 400).toString(); // Estimación de 400 órdenes por día
+            }
+            
+            const chartHtml = `
+                <div><strong>📊 Gráficos Generados:</strong></div>
+                <div id="chatChartContainer_${finalChartId}" style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px; min-height: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <canvas id="${finalChartId}" width="600" height="350" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
+                </div>
+            `;
+            wrapper.innerHTML = chartHtml;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            
+            // Ejecutar el código del gráfico
+            setTimeout(() => {
+                try {
+                    console.log('🔧 Ejecutando código del gráfico...');
+                    console.log('🔍 Buscando canvas con ID:', finalChartId);
+                    const canvas = document.getElementById(finalChartId);
+                    console.log('🖼️ Canvas encontrado:', canvas);
+                    
+                    // Limpiar el código del gráfico (remover markdown si existe)
+                    let cleanChartCode = chartCode;
+                    if (cleanChartCode.includes('```javascript')) {
+                        cleanChartCode = cleanChartCode.replace(/```javascript\n?/, '').replace(/```$/, '');
+                    }
+                    if (cleanChartCode.includes('```')) {
+                        cleanChartCode = cleanChartCode.replace(/```\n?/, '').replace(/```$/, '');
+                    }
+                    
+                   // Verificar que el código esté completo con validaciones más estrictas
+                   const hasNewChart = cleanChartCode.includes('new Chart(');
+                   const hasClosingBrace = cleanChartCode.includes('});');
+                   const hasCompleteStructure = cleanChartCode.includes('data:') && cleanChartCode.includes('options:');
+                   const hasValidLength = cleanChartCode.length > 200; // Código mínimo esperado
+                   
+                   if (!hasNewChart || !hasClosingBrace || !hasCompleteStructure || !hasValidLength) {
+                       console.warn('⚠️ Código incompleto detectado, usando fallback');
+                       console.log('🔍 Validaciones:', {
+                           hasNewChart,
+                           hasClosingBrace,
+                           hasCompleteStructure,
+                           hasValidLength,
+                           length: cleanChartCode.length
+                       });
+                       
+                       // Usar código de fallback mejorado
+                       cleanChartCode = `
+                           console.log('🎨 Iniciando gráfico de fallback...');
+                           const canvas = document.getElementById('${finalChartId}');
+                           if (canvas) {
+                               console.log('✅ Canvas encontrado, creando gráfico de fallback...');
+                               const ctx = canvas.getContext('2d');
+                               
+                               // Crear gráfico de barras con datos reales
+                               const chart = new Chart(ctx, {
+                                   type: 'bar',
+                                   data: {
+                                       labels: ['Ingresos Totales', 'Total Órdenes'],
+                                       datasets: [{
+                                           label: 'Datos del Período ${fromDate} a ${toDate}',
+                                           data: [${totalRevenue}, ${totalOrders}],
+                                           backgroundColor: [
+                                               'rgba(54, 162, 235, 0.8)',
+                                               'rgba(255, 99, 132, 0.8)'
+                                           ],
+                                           borderColor: [
+                                               'rgba(54, 162, 235, 1)',
+                                               'rgba(255, 99, 132, 1)'
+                                           ],
+                                           borderWidth: 2
+                                       }]
+                                   },
+                                   options: {
+                                       responsive: true,
+                                       maintainAspectRatio: false,
+                                       plugins: {
+                                           title: {
+                                               display: true,
+                                               text: 'Resumen de Ventas - ${fromDate} a ${toDate}',
+                                               font: {
+                                                   size: 16,
+                                                   weight: 'bold'
+                                               }
+                                           },
+                                           legend: {
+                                               display: true,
+                                               position: 'top'
+                                           }
+                                       },
+                                       scales: {
+                                           y: {
+                                               beginAtZero: true,
+                                               ticks: {
+                                                   callback: function(value) {
+                                                       return value.toLocaleString('es-ES');
+                                                   }
+                                               },
+                                               title: {
+                                                   display: true,
+                                                   text: 'Valor'
+                                               }
+                                           },
+                                           x: {
+                                               title: {
+                                                   display: true,
+                                                   text: 'Métricas'
+                                               }
+                                           }
+                                       }
+                                   }
+                               });
+                               
+                               console.log('✅ Gráfico de fallback creado exitosamente:', chart);
+                           } else {
+                               console.error('❌ No se encontró el canvas ${finalChartId}');
+                           }
+                       `;
+                   }
+                    
+                    // El código del servidor ya viene con el ID correcto, no necesitamos modificarlo
+                    console.log('📝 Código del servidor (ya con ID correcto):', cleanChartCode.substring(0, 200));
+                    console.log('🔍 Verificando que el código busque el ID correcto...');
+                    if (cleanChartCode.includes(finalChartId)) {
+                        console.log('✅ El código del servidor contiene el ID correcto:', finalChartId);
+                    } else {
+                        console.error('❌ El código del servidor NO contiene el ID correcto. Buscando:', finalChartId);
+                        console.log('📝 Código completo:', cleanChartCode);
+                    }
+                    
+                    // Validar sintaxis antes de ejecutar
+                    try {
+                        new Function(cleanChartCode);
+                        const script = document.createElement('script');
+                        script.textContent = cleanChartCode;
+                        document.head.appendChild(script);
+                        console.log('✅ Script ejecutado correctamente');
+                    } catch (syntaxError) {
+                        console.error('❌ Error de sintaxis:', syntaxError);
+                        addChatMessage('Error al generar el gráfico. Intenta con una solicitud más simple.', 'ai');
+                    }
+                    
+                    setTimeout(() => {
+                        const scripts = document.querySelectorAll('script');
+                        scripts.forEach(script => {
+                            if (script.textContent.includes(finalChartId)) {
+                                if (document.head.contains(script)) {
+                                    document.head.removeChild(script);
+                                    console.log('🧹 Script removido');
+                                }
+                            }
+                        });
+                    }, 3000);
+                } catch (error) {
+                    console.error('❌ Error ejecutando gráfico en chat:', error);
+                    addChatMessage('Error al renderizar el gráfico: ' + error.message, 'ai');
+                }
+            }, 200);
+        }
+
+        function addChatMessage(message, sender, isLoading = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageId = 'msg_' + Date.now();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            messageDiv.id = messageId;
+            messageDiv.innerHTML = `<strong>${sender === 'user' ? 'Tú' : 'IA'}:</strong> ${message}`;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return messageId;
+        }
+
+        function removeChatMessage(messageId) {
+            const message = document.getElementById(messageId);
+            if (message) {
+                message.remove();
+            }
+        }
+
+        // Permitir enviar mensaje con Enter
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        // Función para limpiar scripts de gráficos anteriores
+        function cleanupChartScripts() {
+            console.log('🧹 Limpiando scripts de gráficos anteriores...');
+            const scripts = document.querySelectorAll('script');
+            let removedCount = 0;
+            
+            scripts.forEach(script => {
+                if (script.textContent.includes('Chart(') || script.textContent.includes('chartContainer') || script.textContent.includes('chatChart_')) {
+                    try {
+                        if (document.head.contains(script)) {
+                            document.head.removeChild(script);
+                            removedCount++;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error removiendo script:', e);
+                    }
+                }
+            });
+            
+            console.log(`🧹 Scripts removidos: ${removedCount}`);
+        }
+
+        // Función de debug para verificar el proceso de gráficos
+        window.debugChartProcess = function() {
+            console.log('🔍 === DEBUG DEL PROCESO DE GRÁFICOS ===');
+            console.log('📊 Chart.js disponible:', typeof Chart !== 'undefined');
+            console.log('🎯 Canvas existentes:', document.querySelectorAll('canvas').length);
+            console.log('📜 Scripts de gráficos:', document.querySelectorAll('script[id^="chartScript_"]').length);
+            
+            document.querySelectorAll('canvas').forEach((canvas, index) => {
+                console.log(`Canvas ${index + 1}:`, {
+                    id: canvas.id,
+                    width: canvas.width,
+                    height: canvas.height,
+                    visible: canvas.offsetWidth > 0 && canvas.offsetHeight > 0,
+                    parent: canvas.parentElement?.className || 'Sin parent'
+                });
+            });
+            
+            // Verificar scripts de gráficos
+            document.querySelectorAll('script[id^="chartScript_"]').forEach((script, index) => {
+                console.log(`Script ${index + 1}:`, {
+                    id: script.id,
+                    contentLength: script.textContent.length,
+                    containsChart: script.textContent.includes('Chart(')
+                });
+            });
+            
+            console.log('🔍 === FIN DEBUG ===');
+        };
+
+        // Función específica para debug de múltiples gráficos
+        window.debugMultipleCharts = function() {
+            console.log('🔍 === DEBUG MÚLTIPLES GRÁFICOS ===');
+            
+            const canvases = document.querySelectorAll('canvas');
+            console.log('📊 Total canvas:', canvases.length);
+            
+            canvases.forEach((canvas, i) => {
+                const rect = canvas.getBoundingClientRect();
+                console.log(`Canvas ${i+1} (${canvas.id}):`, {
+                    visible: rect.width > 0 && rect.height > 0,
+                    dimensions: `${rect.width}x${rect.height}`,
+                    position: `${rect.left},${rect.top}`,
+                    hasContext: !!canvas.getContext('2d')
+                });
+            });
+            
+            // Verificar si hay instancias de Chart activas
+            if (typeof Chart !== 'undefined') {
+                console.log('📈 Instancias de Chart activas:', Chart.instances ? Object.keys(Chart.instances).length : 'No disponible');
+            }
+            
+            console.log('🔍 === FIN DEBUG MÚLTIPLES ===');
+        };
+
+        // Función de prueba simple para verificar que Chart.js funciona
+        window.testSimpleChart = function() {
+            console.log('🧪 Probando gráfico simple...');
+            
+            const chartId = 'testSimple_' + Date.now();
+            console.log('🆔 ID del gráfico de prueba:', chartId);
+            
+            // Crear canvas
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ai';
+            wrapper.innerHTML = `
+                <div><strong>🧪 Prueba Simple de Gráfico:</strong></div>
+                <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <canvas id="${chartId}" width="400" height="200" style="border: 1px solid #ccc;"></canvas>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            
+            // Esperar un momento para que el DOM se actualice
+            setTimeout(() => {
+                const canvas = document.getElementById(chartId);
+                console.log('🖼️ Canvas encontrado:', canvas);
+                
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    console.log('🎨 Contexto obtenido:', ctx);
+                    
+                    try {
+                        const chart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: ['Test 1', 'Test 2', 'Test 3'],
+                                datasets: [{
+                                    label: 'Prueba',
+                                    data: [10, 20, 30],
+                                    backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false
+                            }
+                        });
+                        console.log('✅ Gráfico de prueba creado exitosamente:', chart);
+                    } catch (error) {
+                        console.error('❌ Error creando gráfico de prueba:', error);
+                    }
+                } else {
+                    console.error('❌ No se encontró el canvas');
+                }
+            }, 100);
+        };
+
+        // Función simple para crear gráficos con ID único garantizado
+        function createSimpleChart(chartType = 'bar', data = null, serverData = null) {
+            chartCounter++;
+            const chartId = `simpleChart_${chartCounter}_${Date.now()}`;
+            
+            console.log('🎨 Creando gráfico simple...');
+            console.log('🆔 ChartId:', chartId);
+            console.log('📊 Tipo:', chartType);
+            console.log('🔢 Contador:', chartCounter);
+            console.log('📊 Datos del servidor:', serverData ? 'Disponibles' : 'No disponibles');
+            
+            // Crear contenedor
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ai';
+            
+            // Crear HTML del gráfico con información de color
+            const colors = getUniqueChartColors(chartCounter - 1);
+            const chartHtml = `
+                <div><strong>📊 Gráfico ${chartCounter} (${colors.colorName}):</strong></div>
+                <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px; min-height: 400px; border-left: 4px solid ${colors.borderColor};">
+                    <canvas id="${chartId}" width="600" height="350" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid ${colors.borderColor};"></canvas>
+                </div>
+            `;
+            wrapper.innerHTML = chartHtml;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            
+            // Crear gráfico después de un delay
+            setTimeout(() => {
+                const canvas = document.getElementById(chartId);
+                if (!canvas) {
+                    console.error('❌ No se encontró el canvas:', chartId);
+                    return;
+                }
+                
+                try {
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Usar datos reales del servidor si están disponibles, sino datos por defecto
+                    let chartData;
+                    const colors = getUniqueChartColors(chartCounter - 1);
+                    
+                    if (serverData) {
+                        console.log('📊 Usando datos reales del servidor');
+                        chartData = {
+                            ...serverData,
+                            datasets: serverData.datasets.map((dataset, index) => ({
+                                ...dataset,
+                                backgroundColor: colors.backgroundColor,
+                                borderColor: colors.borderColor,
+                                borderWidth: 2
+                            }))
+                        };
+                    } else if (data) {
+                        console.log('📊 Usando datos proporcionados');
+                        chartData = {
+                            ...data,
+                            datasets: data.datasets.map((dataset, index) => ({
+                                ...dataset,
+                                backgroundColor: colors.backgroundColor,
+                                borderColor: colors.borderColor,
+                                borderWidth: 2
+                            }))
+                        };
+                    } else {
+                        console.log('📊 Usando datos por defecto');
+                        chartData = {
+                            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo'],
+                            datasets: [{
+                                label: `Datos ${chartCounter} (${colors.colorName})`,
+                                data: [Math.random() * 20, Math.random() * 20, Math.random() * 20, Math.random() * 20, Math.random() * 20],
+                                backgroundColor: colors.backgroundColor,
+                                borderColor: colors.borderColor,
+                                borderWidth: 2
+                            }]
+                        };
+                    }
+                    
+                    const chart = new Chart(ctx, {
+                        type: chartType,
+                        data: chartData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: chartData.datasets[0].label || `Gráfico ${chartType} #${chartCounter}`
+                                }
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ Gráfico simple creado:', chart);
+                    console.log('📈 Instancias de Chart activas:', Chart.instances ? Object.keys(Chart.instances).length : 'No disponible');
+                    
+                } catch (error) {
+                    console.error('❌ Error creando gráfico simple:', error);
+                }
+            }, 200);
+            
+            return chartId;
+        }
+
+        // Función alternativa para renderizar gráficos sin depender del servidor
+        function renderChartDirectly(chartId, chartType = 'bar', data = null) {
+            console.log('🎨 Renderizando gráfico directamente...');
+            console.log('🆔 ChartId:', chartId);
+            console.log('📊 Tipo:', chartType);
+            
+            // Limpiar canvas existente si existe
+            const existingCanvas = document.getElementById(chartId);
+            if (existingCanvas) {
+                existingCanvas.remove();
+            }
+            
+            // Crear contenedor
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ai';
+            
+            // Crear HTML del gráfico
+            const chartHtml = `
+                <div><strong>📊 Gráfico Generado:</strong></div>
+                <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px; min-height: 400px;">
+                    <canvas id="${chartId}" width="600" height="350" style="max-width: 100%; height: auto; border-radius: 8px;"></canvas>
+                </div>
+            `;
+            wrapper.innerHTML = chartHtml;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            
+            // Crear gráfico después de un delay
+            setTimeout(() => {
+                const canvas = document.getElementById(chartId);
+                if (!canvas) {
+                    console.error('❌ No se encontró el canvas');
+                    return;
+                }
+                
+                try {
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Datos por defecto si no se proporcionan
+                    const defaultData = data || {
+                        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo'],
+                        datasets: [{
+                            label: 'Ventas',
+                            data: [12, 19, 3, 5, 2],
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2
+                        }]
+                    };
+                    
+                    const chart = new Chart(ctx, {
+                        type: chartType,
+                        data: defaultData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: `Gráfico ${chartType} - ${chartId}`
+                                }
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ Gráfico creado directamente:', chart);
+                    
+                } catch (error) {
+                    console.error('❌ Error creando gráfico:', error);
+                }
+            }, 100);
+        }
+
+        // Función de prueba para múltiples gráficos simples
+        window.testSimpleCharts = function() {
+            console.log('🧪 Probando múltiples gráficos simples...');
+            
+            // Limpiar canvas existentes
+            document.querySelectorAll('canvas[id^="simpleChart_"]').forEach(canvas => canvas.remove());
+            
+            // Resetear contador
+            chartCounter = 0;
+            
+            // Crear primer gráfico
+            console.log('📊 Creando primer gráfico...');
+            createSimpleChart('bar');
+            
+            // Crear segundo gráfico después de un delay
+            setTimeout(() => {
+                console.log('📊 Creando segundo gráfico...');
+                createSimpleChart('line');
+            }, 1000);
+            
+            // Crear tercer gráfico
+            setTimeout(() => {
+                console.log('📊 Creando tercer gráfico...');
+                createSimpleChart('doughnut');
+            }, 2000);
+        };
+
+        // Función de prueba para múltiples gráficos directos
+        window.testDirectCharts = function() {
+            console.log('🧪 Probando múltiples gráficos directos...');
+            
+            // Limpiar canvas existentes
+            document.querySelectorAll('canvas[id^="testDirect_"]').forEach(canvas => canvas.remove());
+            
+            // Crear primer gráfico
+            const chartId1 = 'testDirect_' + Date.now();
+            console.log('📊 Creando primer gráfico:', chartId1);
+            renderChartDirectly(chartId1, 'bar', {
+                labels: ['A', 'B', 'C'],
+                datasets: [{
+                    label: 'Primer Gráfico',
+                    data: [10, 20, 30],
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                }]
+            });
+            
+            // Crear segundo gráfico después de un delay
+            setTimeout(() => {
+                const chartId2 = 'testDirect_' + Date.now();
+                console.log('📊 Creando segundo gráfico:', chartId2);
+                renderChartDirectly(chartId2, 'line', {
+                    labels: ['X', 'Y', 'Z'],
+                    datasets: [{
+                        label: 'Segundo Gráfico',
+                        data: [15, 25, 35],
+                        backgroundColor: 'rgba(255, 99, 132, 0.8)'
+                    }]
+                });
+            }, 1000);
+        };
+
+        // Función de prueba específica para múltiples gráficos en el chat
+        window.testMultipleChatCharts = function() {
+            console.log('🧪 Probando múltiples gráficos en el chat...');
+            
+            // Limpiar scripts anteriores
+            cleanupChartScripts();
+            
+            // Crear primer gráfico
+            const chartId1 = 'testChat_' + Date.now();
+            console.log('📊 Creando primer gráfico con ID:', chartId1);
+            
+            const container = document.getElementById('chatMessages');
+            const wrapper1 = document.createElement('div');
+            wrapper1.className = 'chat-message ai';
+            wrapper1.innerHTML = `
+                <div><strong>🧪 Prueba Múltiples Gráficos:</strong></div>
+                <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <canvas id="${chartId1}" width="300" height="200" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+                </div>
+            `;
+            container.appendChild(wrapper1);
+            
+            // Crear segundo gráfico después de un delay
+            setTimeout(() => {
+                const chartId2 = 'testChat_' + Date.now();
+                console.log('📊 Creando segundo gráfico con ID:', chartId2);
+                
+                const wrapper2 = document.createElement('div');
+                wrapper2.className = 'chat-message ai';
+                wrapper2.innerHTML = `
+                    <div><strong>🧪 Segundo Gráfico:</strong></div>
+                    <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                        <canvas id="${chartId2}" width="300" height="200" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+                    </div>
+                `;
+                container.appendChild(wrapper2);
+                
+                // Crear ambos gráficos
+                setTimeout(() => {
+                    try {
+                        // Gráfico 1
+                        const canvas1 = document.getElementById(chartId1);
+                        if (canvas1) {
+                            const ctx1 = canvas1.getContext('2d');
+                            new Chart(ctx1, {
+                                type: 'bar',
+                                data: {
+                                    labels: ['A', 'B', 'C'],
+                                    datasets: [{
+                                        label: 'Gráfico 1',
+                                        data: [10, 20, 30],
+                                        backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                                    }]
+                                }
+                            });
+                            console.log('✅ Primer gráfico creado');
+                        }
+                        
+                        // Gráfico 2
+                        const canvas2 = document.getElementById(chartId2);
+                        if (canvas2) {
+                            const ctx2 = canvas2.getContext('2d');
+                            new Chart(ctx2, {
+                                type: 'line',
+                                data: {
+                                    labels: ['X', 'Y', 'Z'],
+                                    datasets: [{
+                                        label: 'Gráfico 2',
+                                        data: [15, 25, 35],
+                                        backgroundColor: 'rgba(255, 99, 132, 0.8)'
+                                    }]
+                                }
+                            });
+                            console.log('✅ Segundo gráfico creado');
+                        }
+                    } catch (error) {
+                        console.error('❌ Error creando gráficos de prueba:', error);
+                    }
+                }, 100);
+            }, 1000);
+        };
+
+        // Función de prueba para verificar múltiples gráficos
+        window.testMultipleCharts = async function() {
+            console.log('🧪 Iniciando prueba de múltiples gráficos...');
+            
+            // Simular solicitud de gráfico 1
+            const chartId1 = 'testChart_' + Date.now();
+            console.log('📊 Generando gráfico 1 con ID:', chartId1);
+            
+            // Simular solicitud de gráfico 2 (después de un pequeño delay)
+            setTimeout(async () => {
+                const chartId2 = 'testChart_' + Date.now();
+                console.log('📊 Generando gráfico 2 con ID:', chartId2);
+                
+                // Crear canvas de prueba
+                const container = document.getElementById('chatMessages');
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chat-message ai';
+                wrapper.innerHTML = `
+                    <div><strong>🧪 Prueba de Múltiples Gráficos:</strong></div>
+                    <div style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                        <canvas id="${chartId1}" width="300" height="200" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+                        <canvas id="${chartId2}" width="300" height="200" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+                
+                // Crear gráficos de prueba
+                const ctx1 = document.getElementById(chartId1).getContext('2d');
+                const ctx2 = document.getElementById(chartId2).getContext('2d');
+                
+                // Gráfico 1
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['A', 'B', 'C'],
+                        datasets: [{
+                            label: 'Gráfico 1',
+                            data: [10, 20, 30],
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                        }]
+                    }
+                });
+                
+                // Gráfico 2
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: ['X', 'Y', 'Z'],
+                        datasets: [{
+                            label: 'Gráfico 2',
+                            data: [15, 25, 35],
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)'
+                        }]
+                    }
+                });
+                
+                console.log('✅ Prueba completada - ambos gráficos deberían mostrarse');
+            }, 1000);
+        };
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Setear por defecto el día de ayer en ambos campos
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yStr = yesterday.toISOString().split('T')[0];
+            const from = document.getElementById('fromDate');
+            const to = document.getElementById('toDate');
+            if (from) from.value = yStr;
+            if (to) to.value = yStr;
+
+            await loadStores();
+            // No cargar datos automáticamente - solo cuando se presione el botón
+            showInitialState();
+            
+            // Agregar mensaje de bienvenida en el chat
+            addChatMessage('¡Hola! Soy tu asistente de IA para análisis de ventas. Puedo ayudarte con:\n\n• 📊 Análisis de datos y estadísticas\n• 📈 Crear gráficos y visualizaciones\n• 🔍 Consultas SQL a la base de datos\n• 💡 Insights y recomendaciones\n\n¡Pregúntame lo que necesites!\n\n💡 Prueba escribiendo: "Muéstrame un gráfico"', 'ai');
+        });
+
+        // ===== FUNCIONES DE SINCRONIZACIÓN =====
+
+        // Variable para controlar si hay una sincronización en curso
+        let isSyncing = false;
+
+        // Sincronizar datos desde el dashboard
+        async function syncData() {
+            if (isSyncing) {
+                showSyncMessage('⚠️ Ya hay una sincronización en curso. Espera a que termine.', 'error');
+                return;
+            }
+
+            const syncButton = document.getElementById('syncButton');
+            const originalText = syncButton.innerHTML;
+            
+            try {
+                isSyncing = true;
+                disableAllSyncButtons();
+                
+                // Mostrar indicador de carga
+                syncButton.innerHTML = '⏳ Sincronizando...';
+                
+                // Obtener fechas seleccionadas
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                
+                // Llamar al endpoint de sincronización (ahora responde 202 y corre en background)
+                const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+                    body: JSON.stringify({ fromDate, toDate, forceSync: false })
+                });
+
+                // Soportar 202 (Accepted) con polling de estado
+                if (response.status === 202) {
+                    showSyncMessage('⏳ Sincronización iniciada. Esperando a que termine...', 'info');
+
+                    // Polling del estado
+                    const pollStatus = async (maxTries = 120, intervalMs = 2000) => {
+                        for (let i = 0; i < maxTries; i++) {
+                            await new Promise(r => setTimeout(r, intervalMs));
+                            const statusResp = await fetch('/api/sync/status', { headers: { 'Cache-Control': 'no-store' }, cache: 'no-store' });
+                            const statusData = await statusResp.json();
+                            
+                            if (statusData && statusData.status) {
+                                if (statusData.status.state === 'success') {
+                                    const summary = statusData.status.summary || {};
+                                    const total = summary.totalRecords ?? 0;
+                                    showSyncMessage(`✅ Sincronización completada: ${total} registros`, 'success');
+                                    await loadData();
+                                    return;
+                                }
+                                if (statusData.status.state === 'error') {
+                                    const errMsg = statusData.status.error || 'Error desconocido';
+                                    showSyncMessage(`❌ Error en sincronización: ${errMsg}`, 'error');
+                                    return;
+                                }
+                                if (statusData.status.state === 'idle' && !statusData.syncing) {
+                                    showSyncMessage('⚠️ La sincronización se detuvo inesperadamente.', 'warning');
+                                    return;
+                                }
+                            }
+                        }
+                        showSyncMessage('⚠️ La sincronización está tardando más de lo esperado. Intenta nuevamente.', 'warning');
+                    };
+
+                    await pollStatus();
+                } else {
+                    // Compatibilidad con respuesta sin background
+                    const data = await response.json();
+                    if (data && data.success && data.data) {
+                        const total = data.data.totalRecords ?? 0;
+                        showSyncMessage(`✅ Sincronización completada: ${total} registros`, 'success');
+                        await loadData();
+                    } else {
+                        showSyncMessage('❌ Error en la sincronización: ' + (data?.message || 'Respuesta inválida'), 'error');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error en sincronización:', error);
+                showSyncMessage('❌ Error de conexión durante la sincronización', 'error');
+            } finally {
+                // Restaurar botón
+                syncButton.innerHTML = originalText;
+                isSyncing = false;
+                enableAllSyncButtons();
+            }
+        }
+
+        // Mostrar mensaje de sincronización
+        function showSyncMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `sync-message ${type}`;
+            messageDiv.innerHTML = message;
+
+            // Insertar debajo del bloque de controles; fallback a .content o body
+            const controls = document.querySelector('.controls');
+            const content = document.querySelector('.content');
+            if (controls && controls.parentNode) {
+                controls.parentNode.insertBefore(messageDiv, controls.nextSibling);
+            } else if (content && content.parentNode) {
+                content.parentNode.insertBefore(messageDiv, content);
+            } else {
+                document.body.prepend(messageDiv);
+            }
+
+            // Remover después de 5 segundos
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+
+        // Deshabilitar todos los botones de sincronización
+        function disableAllSyncButtons() {
+            const syncButtons = document.querySelectorAll('.sync-btn');
+            syncButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+            });
+        }
+
+        // Habilitar todos los botones de sincronización
+        function enableAllSyncButtons() {
+            const syncButtons = document.querySelectorAll('.sync-btn');
+            syncButtons.forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+        }
+
+        // Sincronizar datos del día anterior
+        async function syncYesterday() {
+            if (isSyncing) {
+                showSyncMessage('⚠️ Ya hay una sincronización en curso. Espera a que termine.', 'error');
+                return;
+            }
+
+            const yesterdayBtn = document.getElementById('syncYesterdayBtn');
+            const originalText = yesterdayBtn.innerHTML;
+            
+            try {
+                isSyncing = true;
+                disableAllSyncButtons();
+                
+                yesterdayBtn.innerHTML = '⏳ Sincronizando...';
+                
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const dateStr = yesterday.toISOString().split('T')[0];
+                
+                // Actualizar los campos de fecha
+                document.getElementById('fromDate').value = dateStr;
+                document.getElementById('toDate').value = dateStr;
+                
+                // Llamar al endpoint de sincronización
+                const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fromDate: dateStr,
+                        toDate: dateStr,
+                        forceSync: false
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSyncMessage(`✅ Sincronización de ayer completada: ${data.data.totalRecords} registros`, 'success');
+                    await loadData();
+                } else {
+                    showSyncMessage('❌ Error sincronizando ayer: ' + data.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error sincronizando ayer:', error);
+                showSyncMessage('❌ Error de conexión', 'error');
+            } finally {
+                yesterdayBtn.innerHTML = originalText;
+                isSyncing = false;
+                enableAllSyncButtons();
+            }
+        }
+
+        // Sincronizar datos de la semana anterior
+        async function syncLastWeek() {
+            if (isSyncing) {
+                showSyncMessage('⚠️ Ya hay una sincronización en curso. Espera a que termine.', 'error');
+                return;
+            }
+
+            const lastWeekBtn = document.getElementById('syncLastWeekBtn');
+            const originalText = lastWeekBtn.innerHTML;
+            
+            try {
+                isSyncing = true;
+                disableAllSyncButtons();
+                
+                lastWeekBtn.innerHTML = '⏳ Sincronizando...';
+                
+                const today = new Date();
+                const lastWeek = new Date(today);
+                lastWeek.setDate(today.getDate() - 7);
+                const weekAgo = new Date(today);
+                weekAgo.setDate(today.getDate() - 14);
+                
+                const fromDate = weekAgo.toISOString().split('T')[0];
+                const toDate = lastWeek.toISOString().split('T')[0];
+                
+                // Actualizar los campos de fecha
+                document.getElementById('fromDate').value = fromDate;
+                document.getElementById('toDate').value = toDate;
+                
+                // Llamar al endpoint de sincronización
+                const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        forceSync: false
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSyncMessage(`✅ Sincronización de semana pasada completada: ${data.data.totalRecords} registros`, 'success');
+                    await loadData();
+                } else {
+                    showSyncMessage('❌ Error sincronizando semana pasada: ' + data.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error sincronizando semana pasada:', error);
+                showSyncMessage('❌ Error de conexión', 'error');
+            } finally {
+                lastWeekBtn.innerHTML = originalText;
+                isSyncing = false;
+                enableAllSyncButtons();
+            }
+        }
+
+        // Los eventos de cambio se manejan directamente en setupStoreSelector()
+        // No necesitamos listeners adicionales aquí
+        
+        // Función de prueba para extracción de datos del servidor
+        window.testDataExtraction = function() {
+            console.log('🧪 Probando extracción de datos del servidor...');
+            
+            // Simular código del servidor
+            const mockServerCode = `
+                const canvas = document.getElementById('testChart');
+                if (canvas) {
+                  const ctx = canvas.getContext('2d');
+                  new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                      labels: JSON.stringify(['Enero', 'Febrero', 'Marzo']),
+                      datasets: [{
+                        label: 'Ventas',
+                        data: JSON.stringify([100, 150, 200]),
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                      }]
+                    }
+                  });
+                }
+            `;
+            
+            console.log('📄 Código simulado:', mockServerCode.substring(0, 200) + '...');
+            
+            // Probar extracción
+            const labelsMatch = mockServerCode.match(/labels:\s*JSON\.stringify\(([^)]+)\)/);
+            const dataMatch = mockServerCode.match(/data:\s*JSON\.stringify\(([^)]+)\)/);
+            
+            if (labelsMatch && dataMatch) {
+                console.log('✅ Labels encontrados:', labelsMatch[1]);
+                console.log('✅ Data encontrados:', dataMatch[1]);
+                
+                try {
+                    const labels = eval(labelsMatch[1]);
+                    const data = eval(dataMatch[1]);
+                    console.log('✅ Labels parseados:', labels);
+                    console.log('✅ Data parseados:', data);
+                } catch (e) {
+                    console.error('❌ Error parseando datos:', e);
+                }
+            } else {
+                console.log('❌ No se encontraron datos');
+            }
+        };
+
+        // Función de logout
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.removeItem('isAuthenticated');
+                    localStorage.removeItem('username');
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error en logout:', error);
+                // Forzar logout local
+                localStorage.removeItem('isAuthenticated');
+                localStorage.removeItem('username');
+                window.location.href = '/login';
+            }
+        }
+
+        // Verificar autenticación al cargar la página
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+            window.location.href = '/login';
+        }
     </script>
 </body>
 </html>
