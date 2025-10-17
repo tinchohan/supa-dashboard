@@ -1085,7 +1085,7 @@
                 const requestBody = {
                     fromDate: fromDate,
                     toDate: toDate,
-                    storeId: selectedStores
+                    storeId: selectedStores.length > 0 ? selectedStores : null
                 };
                 console.log('📤 Request body:', requestBody);
                 
