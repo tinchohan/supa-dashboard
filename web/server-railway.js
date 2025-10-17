@@ -283,14 +283,17 @@ app.post('/api/stats', async (req, res) => {
     
     const statsParams = [fromDate, toDate];
     
-    if (storeId && storeId.length > 0) {
-      if (dbType === 'postgresql') {
-        const placeholders = storeId.map((_, index) => `$${index + 3}`).join(',');
-        statsQuery += ` AND so.store_id IN (${placeholders})`;
-      } else {
-        statsQuery += ` AND so.store_id IN (${storeId.map(() => '?').join(',')})`;
+    if (storeId && storeId !== null && storeId !== undefined) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        if (dbType === 'postgresql') {
+          const placeholders = storeIds.map((_, index) => `$${index + 3}`).join(',');
+          statsQuery += ` AND so.store_id IN (${placeholders})`;
+        } else {
+          statsQuery += ` AND so.store_id IN (${storeIds.map(() => '?').join(',')})`;
+        }
+        statsParams.push(...storeIds);
       }
-      statsParams.push(...(Array.isArray(storeId) ? storeId : [storeId]));
     }
     
     console.log('🔍 Ejecutando consulta stats:', statsQuery);
@@ -317,14 +320,17 @@ app.post('/api/stats', async (req, res) => {
     
     const paymentParams = [fromDate, toDate];
     
-    if (storeId && storeId.length > 0) {
-      if (dbType === 'postgresql') {
-        const placeholders = storeId.map((_, index) => `$${index + 3}`).join(',');
-        paymentQuery += ` AND so.store_id IN (${placeholders})`;
-      } else {
-        paymentQuery += ` AND so.store_id IN (${storeId.map(() => '?').join(',')})`;
+    if (storeId && storeId !== null && storeId !== undefined) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        if (dbType === 'postgresql') {
+          const placeholders = storeIds.map((_, index) => `$${index + 3}`).join(',');
+          paymentQuery += ` AND so.store_id IN (${placeholders})`;
+        } else {
+          paymentQuery += ` AND so.store_id IN (${storeIds.map(() => '?').join(',')})`;
+        }
+        paymentParams.push(...storeIds);
       }
-      paymentParams.push(...(Array.isArray(storeId) ? storeId : [storeId]));
     }
     
     paymentQuery += `
@@ -362,14 +368,17 @@ app.post('/api/stats', async (req, res) => {
     
     const productsParams = [fromDate, toDate];
     
-    if (storeId && storeId.length > 0) {
-      if (dbType === 'postgresql') {
-        const placeholders = storeId.map((_, index) => `$${index + 3}`).join(',');
-        productsQuery += ` AND sp.store_id IN (${placeholders})`;
-      } else {
-        productsQuery += ` AND sp.store_id IN (${storeId.map(() => '?').join(',')})`;
+    if (storeId && storeId !== null && storeId !== undefined) {
+      const storeIds = Array.isArray(storeId) ? storeId : [storeId];
+      if (storeIds.length > 0) {
+        if (dbType === 'postgresql') {
+          const placeholders = storeIds.map((_, index) => `$${index + 3}`).join(',');
+          productsQuery += ` AND sp.store_id IN (${placeholders})`;
+        } else {
+          productsQuery += ` AND sp.store_id IN (${storeIds.map(() => '?').join(',')})`;
+        }
+        productsParams.push(...storeIds);
       }
-      productsParams.push(...(Array.isArray(storeId) ? storeId : [storeId]));
     }
     
     productsQuery += `
