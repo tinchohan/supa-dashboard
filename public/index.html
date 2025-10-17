@@ -1080,6 +1080,14 @@
                 const selectedStores = getSelectedStores();
                 
                 console.log('📊 Cargando estadísticas para tiendas:', selectedStores);
+                console.log('📅 Fechas:', fromDate, 'a', toDate);
+                
+                const requestBody = {
+                    fromDate: fromDate,
+                    toDate: toDate,
+                    storeId: selectedStores
+                };
+                console.log('📤 Request body:', requestBody);
                 
                 // Enviar como POST con JSON para manejar múltiples tiendas correctamente
                 const response = await fetch('/api/stats', {
@@ -1087,13 +1095,10 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        fromDate: fromDate,
-                        toDate: toDate,
-                        storeId: selectedStores
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 const data = await response.json();
+                console.log('📊 Response completa:', data);
                 
                 if (data.success) {
                     const stats = data.data;
