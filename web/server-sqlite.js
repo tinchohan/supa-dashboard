@@ -206,12 +206,12 @@ app.post('/api/stats', async (req, res) => {
     
     const stats = dbToUse.prepare(statsQuery).get(...params);
     
-    // Desglose por medios de pago (categorización específica)
+    // Desglose por medios de pago (categorización corregida)
     let paymentQuery = `
       SELECT 
         CASE 
-          WHEN so.payment_method = 'cash' OR so.payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
-          WHEN so.payment_method = 'rappiol' OR so.payment_method = 'pedidosyaol' THEN 'Rappi + PedidosYa OL'
+          WHEN so.payment_method = 'cash' OR so.payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
+          WHEN so.payment_method = 'cc_rappiol' OR so.payment_method = 'cc_pedidosyaol' THEN 'Apps'
           ELSE 'Otros'
         END as payment_category,
         COUNT(*) as order_count,
@@ -241,8 +241,8 @@ app.post('/api/stats', async (req, res) => {
     paymentQuery += ` 
       GROUP BY 
         CASE 
-          WHEN so.payment_method = 'cash' OR so.payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
-          WHEN so.payment_method = 'rappiol' OR so.payment_method = 'pedidosyaol' THEN 'Rappi + PedidosYa OL'
+          WHEN so.payment_method = 'cash' OR so.payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
+          WHEN so.payment_method = 'cc_rappiol' OR so.payment_method = 'cc_pedidosyaol' THEN 'Apps'
           ELSE 'Otros'
         END 
       ORDER BY total_amount DESC`;
