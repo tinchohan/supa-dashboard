@@ -370,8 +370,13 @@ app.post('/api/stats', async (req, res) => {
 // Endpoint para obtener tiendas
 app.get('/api/stores', async (req, res) => {
   try {
-    const result = await db.query('SELECT store_id, store_name FROM stores ORDER BY store_name');
-    res.json({ success: true, data: result.rows });
+    if (dbType === 'postgresql') {
+      const result = await db.query('SELECT store_id, store_name FROM stores ORDER BY store_name');
+      res.json({ success: true, data: result.rows });
+    } else {
+      const result = db.prepare('SELECT store_id, store_name FROM stores ORDER BY store_name').all();
+      res.json({ success: true, data: result });
+    }
   } catch (error) {
     console.error('❌ Error en /api/stores:', error);
     res.status(500).json({ success: false, error: error.message });
