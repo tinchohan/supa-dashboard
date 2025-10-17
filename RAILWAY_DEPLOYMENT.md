@@ -1,142 +1,202 @@
-# 🚂 Guía de Deployment en Railway
+# 🚀 Despliegue en Railway con PostgreSQL
+
+Este documento explica cómo desplegar el sistema de sincronización de Linisco en Railway con PostgreSQL.
 
 ## 📋 Requisitos Previos
 
-1. **Cuenta en Railway**: [railway.app](https://railway.app)
-2. **Código en GitHub**: Tu proyecto debe estar en un repositorio de GitHub
-3. **Variables de entorno**: Tener listas tus API keys
+- Cuenta en [Railway](https://railway.app)
+- Repositorio en GitHub
+- Node.js 18+ (para desarrollo local)
 
-## 🚀 Pasos para Deploy
+## 🚀 Pasos para Desplegar
 
-### Paso 1: Preparar el Repositorio
+### 1. Preparar el Repositorio
 
-1. **Subir a GitHub** (si no lo has hecho):
-   ```bash
-   git add .
-   git commit -m "Preparado para Railway deployment"
-   git push origin main
-   ```
+```bash
+# Asegúrate de estar en el branch correcto
+git checkout feature/postgresql-migration
 
-### Paso 2: Crear Proyecto en Railway
+# Verificar que todos los archivos estén commiteados
+git status
+git add .
+git commit -m "feat: Ready for Railway deployment with PostgreSQL"
+git push origin feature/postgresql-migration
+```
 
-1. Ve a [railway.app](https://railway.app) y haz login
-2. Haz clic en **"New Project"**
-3. Selecciona **"Deploy from GitHub repo"**
-4. Conecta tu cuenta de GitHub
-5. Selecciona tu repositorio `Supa`
-6. Railway detectará automáticamente que es una aplicación Node.js
+### 2. Crear Proyecto en Railway
 
-### Paso 3: Configurar Base de Datos
+1. Ir a [railway.app](https://railway.app)
+2. Click en "New Project"
+3. Seleccionar "Deploy from GitHub repo"
+4. Conectar tu repositorio de GitHub
+5. Seleccionar el branch `feature/postgresql-migration`
 
-1. En tu proyecto de Railway, haz clic en **"+ New"**
-2. Selecciona **"Database"** → **"PostgreSQL"**
-3. Railway creará automáticamente una base de datos PostgreSQL
-4. La variable `DATABASE_URL` se configurará automáticamente
+### 3. Configurar PostgreSQL
 
-### Paso 4: Configurar Variables de Entorno
+Railway creará automáticamente una base de datos PostgreSQL y configurará las variables de entorno:
 
-En el dashboard de Railway, ve a **"Variables"** y agrega:
+- `DATABASE_URL` - URL completa de conexión
+- `PGHOST` - Host de PostgreSQL
+- `PGDATABASE` - Nombre de la base de datos
+- `PGPASSWORD` - Contraseña
+- `PGPORT` - Puerto (5432)
+- `PGUSER` - Usuario
+
+### 4. Configurar Variables de Entorno
+
+En el dashboard de Railway, agregar estas variables:
 
 ```env
 NODE_ENV=production
 PORT=3000
-GEMINI_API_KEY=tu_api_key_de_gemini
-LINISCO_API_KEY=tu_api_key_de_linisco
-SUPABASE_URL=tu_url_de_supabase
-SUPABASE_ANON_KEY=tu_anon_key_de_supabase
+RAILWAY_ENVIRONMENT=production
 ```
 
-### Paso 5: Configurar el Deploy
+### 5. Configurar el Script de Inicio
 
-1. Railway detectará automáticamente tu `package.json`
-2. Usará el script `start:prod` que configuramos
-3. El deploy comenzará automáticamente
+Railway usará automáticamente el archivo `railway.toml` que configuramos para:
 
-### Paso 6: Verificar el Deploy
+- Usar PostgreSQL como base de datos
+- Ejecutar `npm run start:railway-postgresql`
+- Configurar health checks
 
-1. Una vez completado el deploy, Railway te dará una URL
-2. Visita la URL para verificar que todo funciona
-3. La URL será algo como: `https://tu-proyecto.railway.app`
+### 6. Desplegar
 
-## 🔧 Configuración Adicional
+Railway desplegará automáticamente cuando hagas push al branch. El proceso incluye:
 
-### Dominio Personalizado (Opcional)
+1. **Instalación de dependencias**: `npm install`
+2. **Migración de base de datos**: Se ejecuta automáticamente el schema
+3. **Inicio del servidor**: Usa el servidor híbrido que detecta PostgreSQL
 
-1. En Railway, ve a **"Settings"** → **"Domains"**
-2. Agrega tu dominio personalizado
-3. Configura los DNS según las instrucciones de Railway
+## 🔧 Configuración del Servidor Híbrido
 
-### Monitoreo
+El servidor `web/server-railway-postgresql.js` detecta automáticamente:
 
-- Railway proporciona logs en tiempo real
-- Métricas de CPU y memoria
-- Alertas automáticas
+- **En Railway**: Usa PostgreSQL con la URL de `DATABASE_URL`
+- **Localmente**: Usa SQLite para desarrollo
+
+### Características del Servidor Híbrido:
+
+- ✅ **Detección automática** de entorno
+- ✅ **PostgreSQL en Railway** con schema correcto
+- ✅ **SQLite local** para desarrollo
+- ✅ **Misma API REST** en ambos entornos
+- ✅ **Categorías de pago** funcionando correctamente
+- ✅ **Sincronización** compatible con la API de Linisco
+
+## 📊 Verificación del Despliegue
+
+### 1. Verificar Base de Datos
+
+```bash
+# Conectar a PostgreSQL en Railway
+psql $DATABASE_URL
+
+# Verificar tablas
+\dt
+
+# Verificar datos
+SELECT COUNT(*) FROM sale_orders;
+SELECT COUNT(*) FROM sale_products;
+SELECT COUNT(*) FROM stores;
+```
+
+### 2. Probar Endpoints
+
+```bash
+# Estadísticas generales
+curl -X POST https://tu-app.railway.app/api/stats \
+  -H "Content-Type: application/json" \
+  -d '{"fromDate": "2025-10-01", "toDate": "2025-10-31"}'
+
+# Listar tiendas
+curl https://tu-app.railway.app/api/stores
+
+# Sincronización
+curl -X POST https://tu-app.railway.app/api/sync \
+  -H "Content-Type: application/json" \
+  -d '{"storeId": "66220", "password": "subway123", "data": {...}}'
+```
+
+### 3. Verificar en el Navegador
+
+1. Ir a `https://tu-app.railway.app`
+2. Navegar a "Estadísticas Generales"
+3. Seleccionar fechas y verificar que aparecen las 3 categorías:
+   - **Efectivo** (cash + cc_pedidosyaft)
+   - **Apps** (cc_rappiol + cc_pedidosyaol)
+   - **Otros** (resto de métodos)
+
+## 🔄 Migración de Datos
+
+Si tienes datos existentes en SQLite, puedes migrarlos:
+
+```bash
+# Localmente, antes de desplegar
+npm run migrate-to-postgresql-real
+```
+
+## 📈 Monitoreo
+
+Railway proporciona:
+
+- **Logs en tiempo real** del servidor
+- **Métricas de rendimiento** de la base de datos
+- **Health checks** automáticos
+- **Backups automáticos** de PostgreSQL
 
 ## 🐛 Solución de Problemas
 
-### Error de Base de Datos
+### Error de Conexión a Base de Datos
+
 ```bash
-# Si hay problemas con PostgreSQL, verifica:
-# 1. Que DATABASE_URL esté configurada
-# 2. Que las tablas se crearon correctamente
+# Verificar variables de entorno
+railway variables
+
+# Verificar logs
+railway logs
 ```
 
-### Error de Variables de Entorno
+### Error de Schema
+
 ```bash
-# Verifica que todas las variables estén configuradas:
-# - GEMINI_API_KEY
-# - LINISCO_API_KEY
-# - SUPABASE_URL
-# - SUPABASE_ANON_KEY
+# Recrear schema manualmente
+railway run psql $DATABASE_URL -f schemas/postgresql-schema.sql
 ```
 
-### Error de CORS
-```bash
-# Si hay problemas de CORS, configura:
-CORS_ORIGIN=https://tu-dominio.railway.app
-```
+### Error de Sincronización
 
-## 📊 Migración de Datos
+1. Verificar que las credenciales de tienda sean correctas
+2. Verificar que el formato de datos coincida con la API de Linisco
+3. Revisar logs del servidor
 
-Si tienes datos en SQLite que quieres migrar:
+## 🎯 Ventajas del Despliegue en Railway
 
-1. **Exportar datos de SQLite**:
-   ```bash
-   # Crear script de migración
-   node scripts/migrate-to-postgres.js
-   ```
+- ✅ **PostgreSQL nativo** - Mejor rendimiento que SQLite
+- ✅ **Escalabilidad automática** - Se adapta al tráfico
+- ✅ **Backups automáticos** - Datos seguros
+- ✅ **SSL automático** - Conexiones seguras
+- ✅ **Deploy automático** - Con cada push a GitHub
+- ✅ **Monitoreo integrado** - Logs y métricas
+- ✅ **Variables de entorno** - Configuración segura
 
-2. **Importar a PostgreSQL**:
-   - Los datos se migrarán automáticamente al primer deploy
-   - O puedes usar el script de migración manual
+## 📞 Soporte
 
-## 💰 Costos
+Si tienes problemas:
 
-- **Plan Gratuito**: $5 de crédito mensual
-- **Plan Pro**: $20/mes (recomendado para producción)
-- **Base de datos**: Incluida en ambos planes
-
-## 🔄 Actualizaciones Automáticas
-
-Railway se conecta a tu repositorio de GitHub y:
-- Deploya automáticamente en cada push a `main`
-- Mantiene tu aplicación siempre actualizada
-- Rollback automático si hay errores
-
-## 📱 Acceso Móvil
-
-Tu aplicación será accesible desde cualquier dispositivo:
-- ✅ Responsive design incluido
-- ✅ HTTPS automático
-- ✅ CDN global
+1. Revisar logs en Railway dashboard
+2. Verificar variables de entorno
+3. Comprobar conectividad a PostgreSQL
+4. Verificar que el schema se creó correctamente
 
 ## 🎉 ¡Listo!
 
-Una vez completados estos pasos, tu aplicación estará:
-- ✅ Hosteada en la nube
-- ✅ Con base de datos PostgreSQL
-- ✅ Con dominio personalizado
-- ✅ Con actualizaciones automáticas
-- ✅ Con monitoreo incluido
+Una vez desplegado, tendrás:
 
-**URL de tu aplicación**: `https://tu-proyecto.railway.app`
+- **API REST** funcionando en Railway
+- **PostgreSQL** como base de datos
+- **Categorías de pago** correctamente separadas
+- **Sincronización** compatible con Linisco
+- **Dashboard** accesible desde cualquier lugar
+
+¡El sistema está listo para producción! 🚀

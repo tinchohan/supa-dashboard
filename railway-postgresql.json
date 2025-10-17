@@ -1,0 +1,31 @@
+{
+  "name": "linisco-postgresql",
+  "description": "Sistema de sincronización Linisco con PostgreSQL",
+  "version": "2.0.0",
+  "main": "web/server-postgresql-real.js",
+  "scripts": {
+    "start": "node web/server-postgresql-real.js",
+    "migrate": "node scripts/migrate-to-postgresql-real.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3",
+    "better-sqlite3": "^9.2.2",
+    "@google/genai": "^1.25.0",
+    "node-fetch": "^3.3.2"
+  },
+  "railway": {
+    "database": {
+      "type": "postgresql",
+      "version": "15"
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "PORT": "3000"
+    }
+  }
+}

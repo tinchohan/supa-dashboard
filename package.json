@@ -11,6 +11,7 @@
     "start:postgresql": "NODE_ENV=production node web/server-postgresql.js",
     "start:postgresql-sqlite": "node web/server-postgresql-sqlite.js",
     "start:postgresql-real": "node web/server-postgresql-real.js",
+    "start:railway-postgresql": "node web/server-railway-postgresql.js",
     "start:local": "node web/server-local.js",
     "sync": "node sync.js",
     "dev": "node --watch index.js",
