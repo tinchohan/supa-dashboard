@@ -5,7 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 import aiGeminiService from '../services/aiGeminiService.js';
-import MultiStoreSyncService from '../services/multiStoreSyncService-sqlite.js';
+import MultiStoreSyncService from '../services/multiStoreSyncService-postgresql-sqlite.js';
 
 // Configurar entorno para Railway
 import '../scripts/configure-railway-env.js';
@@ -79,6 +79,7 @@ function initializeDatabase() {
         store_id TEXT PRIMARY KEY,
         store_name TEXT NOT NULL,
         password TEXT,
+        email TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -142,9 +143,9 @@ function initializeDatabase() {
     
     for (const store of stores) {
       sqliteDb.prepare(`
-        INSERT OR REPLACE INTO stores (store_id, store_name, password) 
-        VALUES (?, ?, ?)
-      `).run(store.store_id, store.store_name, store.password);
+        INSERT OR REPLACE INTO stores (store_id, store_name, password, email) 
+        VALUES (?, ?, ?, ?)
+      `).run(store.store_id, store.store_name, store.password, `${store.store_id}@example.com`);
       console.log(`✅ Tienda insertada: ${store.store_name}`);
     }
     
