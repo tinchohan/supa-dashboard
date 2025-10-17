@@ -34,17 +34,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Obtener tiendas
+// Obtener tiendas (usar datos fijos ya que no hay endpoint específico)
 app.get('/api/stores', async (req, res) => {
   try {
-    // Usar credenciales de Railway automáticamente
-    const result = await apiService.getData('/api/stores', '63953'); // Usar cualquier tienda para obtener la lista
+    // Retornar lista fija de tiendas ya que no hay endpoint específico
+    const stores = [
+      { store_id: "63953", store_name: "Subway Lacroze" },
+      { store_id: "66220", store_name: "Subway Corrientes" },
+      { store_id: "72267", store_name: "Subway Ortiz" },
+      { store_id: "30036", store_name: "Daniel Lacroze" },
+      { store_id: "30038", store_name: "Daniel Corrientes" },
+      { store_id: "10019", store_name: "Daniel Ortiz" },
+      { store_id: "10020", store_name: "Seitu Juramento" }
+    ];
     
-    if (result.success) {
-      res.json({ success: true, data: result.data });
-    } else {
-      res.status(500).json({ success: false, error: result.error });
-    }
+    res.json({ success: true, data: stores });
   } catch (error) {
     console.error('❌ Error obteniendo tiendas:', error);
     res.status(500).json({ success: false, error: error.message });

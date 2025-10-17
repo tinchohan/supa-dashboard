@@ -11,23 +11,26 @@ class AuthService {
     try {
       console.log(`🔐 Autenticando: ${email}`);
       
-      const response = await axios.post(`${this.baseURL}/auth/login`, {
-        email: email,
-        password: password
+      const response = await axios.post(`${this.baseURL}/users/sign_in`, {
+        user: {
+          email: email,
+          password: password
+        }
       }, {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'User-Agent': 'Linisco-Dashboard/1.0.0'
         }
       });
 
-      if (response.data && response.data.token) {
+      if (response.data && response.data.user && response.data.user.authentication_token) {
         console.log(`✅ Autenticación exitosa para ${email}`);
         return {
           success: true,
-          token: response.data.token,
-          user: response.data.user || { email }
+          token: response.data.user.authentication_token,
+          user: response.data.user
         };
       } else {
         throw new Error('No se recibió token de autenticación');

@@ -24,10 +24,13 @@ class ApiService {
       // Hacer petición a la API
       const response = await axios.get(`${this.baseURL}${endpoint}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-User-Email': email,
+          'X-User-Token': token,
           'User-Agent': 'Linisco-Dashboard/1.0.0'
         },
-        params: params,
+        data: params, // Los datos van en el body para esta API
         timeout: 10000
       });
 
@@ -56,27 +59,15 @@ class ApiService {
   // Datos de muestra para cuando la API no esté disponible
   getMockData(endpoint, params) {
     const mockData = {
-      '/api/stores': {
-        success: true,
-        data: [
-          { store_id: "63953", store_name: "Subway Lacroze" },
-          { store_id: "66220", store_name: "Subway Corrientes" },
-          { store_id: "72267", store_name: "Subway Ortiz" },
-          { store_id: "30036", store_name: "Daniel Lacroze" },
-          { store_id: "30038", store_name: "Daniel Corrientes" },
-          { store_id: "10019", store_name: "Daniel Ortiz" },
-          { store_id: "10020", store_name: "Seitu Juramento" }
-        ]
-      },
-      '/api/sale-orders': {
+      '/sale_orders': {
         success: true,
         data: this.getMockOrders(params)
       },
-      '/api/sale-products': {
+      '/sale_products': {
         success: true,
         data: this.getMockProducts(params)
       },
-      '/api/sessions': {
+      '/psessions': {
         success: true,
         data: this.getMockSessions(params)
       }
@@ -264,9 +255,9 @@ class ApiService {
       console.log(`📊 Obteniendo estadísticas reales desde ${fromDate} hasta ${toDate}`);
       
       // Intentar obtener datos reales de la API
-      const ordersResult = await this.getData('/api/sale-orders', storeId || '63953', null, null, {
-        from_date: fromDate,
-        to_date: toDate
+      const ordersResult = await this.getData('/sale_orders', storeId || '63953', null, null, {
+        fromDate: fromDate,
+        toDate: toDate
       });
 
       let orders = [];
