@@ -107,6 +107,17 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
+// API de tiendas
+app.get('/api/stores', async (req, res) => {
+  try {
+    const stores = dbToUse.prepare('SELECT store_id, store_name FROM stores ORDER BY store_name').all();
+    res.json({ success: true, data: stores });
+  } catch (error) {
+    console.error('Error obteniendo tiendas:', error);
+    res.status(500).json({ success: false, message: 'Error obteniendo tiendas' });
+  }
+});
+
 // API de productos
 app.get('/api/top-products', async (req, res) => {
   try {
