@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 
 import { connectDatabase, getDatabase } from './database/connection.js';
 import LiniscoSyncService from './services/liniscoSync.js';
+import LocalDataService from './services/localDataService.js';
 import AIService from './services/aiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,7 @@ app.use(express.static('public'));
 
 // Servicios
 const syncService = new LiniscoSyncService();
+const localDataService = new LocalDataService();
 const aiService = new AIService();
 
 // Inicializar base de datos
@@ -73,18 +75,29 @@ app.post('/api/init-db', async (req, res) => {
 // Sincronizar datos
 app.post('/api/sync', async (req, res) => {
   try {
-    const { fromDate = '2025-01-01', toDate = '2025-12-31' } = req.body;
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', useLocal = true } = req.body;
     
     console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
     
     const db = await getDatabase();
-    const result = await syncService.syncAllStores(fromDate, toDate, db);
     
-    res.json({ 
-      success: true, 
-      message: `Sincronización completada con ${result.totalRecords} registros`,
-      data: result
-    });
+    if (useLocal) {
+      // Usar datos locales
+      const result = await localDataService.syncToPostgreSQL(db);
+      res.json({ 
+        success: true, 
+        message: 'Datos locales sincronizados a PostgreSQL',
+        data: result
+      });
+    } else {
+      // Intentar sincronizar con Linisco
+      const result = await syncService.syncAllStores(fromDate, toDate, db);
+      res.json({ 
+        success: true, 
+        message: `Sincronización con Linisco completada con ${result.totalRecords} registros`,
+        data: result
+      });
+    }
     
   } catch (error) {
     console.error('❌ Error en sincronización:', error);
@@ -95,9 +108,9 @@ app.post('/api/sync', async (req, res) => {
 // Obtener tiendas
 app.get('/api/stores', async (req, res) => {
   try {
-    const db = await getDatabase();
-    const result = await db.query('SELECT store_id, store_name FROM stores ORDER BY store_name');
-    res.json({ success: true, data: result.rows });
+    // Usar datos locales primero
+    const localStores = localDataService.getStores();
+    res.json({ success: true, data: localStores });
   } catch (error) {
     console.error('❌ Error obteniendo tiendas:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -108,99 +121,13 @@ app.get('/api/stores', async (req, res) => {
 app.post('/api/stats', async (req, res) => {
   try {
     const { fromDate, toDate, storeId } = req.body;
-    const db = await getDatabase();
     
-    // Construir filtro de tiendas
-    let storeFilter = '';
-    let params = [fromDate, toDate];
-    
-    if (storeId && storeId.length > 0) {
-      const placeholders = storeId.map((_, i) => `$${i + 3}`).join(',');
-      storeFilter = `AND so.store_id IN (${placeholders})`;
-      params = params.concat(storeId);
-    }
-    
-    // Estadísticas generales
-    const statsQuery = `
-      SELECT 
-        COUNT(*) as total_orders,
-        SUM(so.total - so.discount) as total_revenue,
-        AVG(so.total - so.discount) as average_order_value
-      FROM sale_orders so
-      WHERE DATE(so.order_date) BETWEEN $1 AND $2
-      ${storeFilter}
-    `;
-    
-    const statsResult = await db.query(statsQuery, params);
-    const stats = statsResult.rows[0];
-    
-    // Desglose por método de pago
-    const paymentQuery = `
-      SELECT
-        CASE
-          WHEN so.paymentmethod = 'cash' OR so.paymentmethod = 'cc_pedidosyaft' THEN 'Efectivo'
-          WHEN so.paymentmethod = 'cc_rappiol' OR so.paymentmethod = 'cc_pedidosyaol' THEN 'Apps'
-          ELSE 'Otros'
-        END as payment_category,
-        COUNT(*) as order_count,
-        SUM(so.total - so.discount) as total_amount
-      FROM sale_orders so
-      WHERE DATE(so.order_date) BETWEEN $1 AND $2
-      ${storeFilter}
-      GROUP BY
-        CASE
-          WHEN so.paymentmethod = 'cash' OR so.paymentmethod = 'cc_pedidosyaft' THEN 'Efectivo'
-          WHEN so.paymentmethod = 'cc_rappiol' OR so.paymentmethod = 'cc_pedidosyaol' THEN 'Apps'
-          ELSE 'Otros'
-        END
-      ORDER BY total_amount DESC
-    `;
-    
-    const paymentResult = await db.query(paymentQuery, params);
-    
-    // Top 5 productos
-    const productsQuery = `
-      SELECT
-        sp.name,
-        COUNT(*) as times_sold,
-        SUM(sp.quantity) as total_quantity,
-        SUM(sp.sale_price * sp.quantity) as total_revenue
-      FROM sale_products sp
-      JOIN sale_orders so ON sp.id_sale_order = so.linisco_id
-      WHERE DATE(so.order_date) BETWEEN $1 AND $2
-      ${storeFilter}
-      GROUP BY sp.name
-      ORDER BY total_revenue DESC
-      LIMIT 5
-    `;
-    
-    const productsResult = await db.query(productsQuery, params);
-    
-    // Desglose por tienda
-    const storesQuery = `
-      SELECT
-        s.store_name,
-        COUNT(so.id) as order_count,
-        SUM(so.total - so.discount) as total_amount
-      FROM stores s
-      LEFT JOIN sale_orders so ON s.store_id = so.store_id 
-        AND DATE(so.order_date) BETWEEN $1 AND $2
-      GROUP BY s.store_id, s.store_name
-      ORDER BY total_amount DESC
-    `;
-    
-    const storesResult = await db.query(storesQuery, [fromDate, toDate]);
+    // Usar datos locales
+    const stats = localDataService.getStats(fromDate, toDate, storeId);
     
     res.json({
       success: true,
-      data: {
-        totalOrders: parseInt(stats.total_orders) || 0,
-        totalRevenue: parseFloat(stats.total_revenue) || 0,
-        averageOrderValue: parseFloat(stats.average_order_value) || 0,
-        paymentBreakdown: paymentResult.rows,
-        topProducts: productsResult.rows,
-        storeBreakdown: storesResult.rows
-      }
+      data: stats
     });
     
   } catch (error) {

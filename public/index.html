@@ -266,7 +266,7 @@
         <div class="controls">
             <div class="control-group">
                 <label for="fromDate">Desde:</label>
-                <input type="date" id="fromDate" value="2025-10-01">
+                    <input type="date" id="fromDate" value="2025-10-01">
                 
                 <label for="toDate">Hasta:</label>
                 <input type="date" id="toDate" value="2025-10-31">
@@ -278,9 +278,9 @@
                 
                 <button class="btn" onclick="loadData()">📊 Cargar Datos</button>
                 <button class="btn" onclick="syncData()">🔄 Sincronizar</button>
+                </div>
             </div>
-        </div>
-
+            
         <div id="loading" class="loading" style="display: none;">
             <p>🔄 Cargando datos...</p>
         </div>
@@ -288,16 +288,16 @@
         <div id="error" class="error" style="display: none;"></div>
         <div id="success" class="success" style="display: none;"></div>
 
-        <div class="stats-grid" id="statsGrid">
+                <div class="stats-grid" id="statsGrid">
             <!-- Las estadísticas se cargarán aquí -->
-        </div>
+                </div>
 
         <div class="charts-grid">
             <div class="chart-container">
                 <h3>💳 Métodos de Pago</h3>
                 <canvas id="paymentChart"></canvas>
             </div>
-            
+
             <div class="chart-container">
                 <h3>🏆 Top 5 Productos</h3>
                 <canvas id="productsChart"></canvas>
@@ -307,21 +307,21 @@
                 <h3>🏪 Ventas por Tienda</h3>
                 <canvas id="storesChart"></canvas>
             </div>
-        </div>
+                        </div>
 
-        <div class="chat-container">
+                <div class="chat-container">
             <h3>🤖 Chat con IA</h3>
             <div class="chat-messages" id="chatMessages">
                 <div class="chat-message ai">
                     ¡Hola! Soy tu asistente de análisis de ventas. ¿En qué puedo ayudarte?
+                    </div>
                 </div>
-            </div>
             <div class="chat-input">
                 <input type="text" id="chatInput" placeholder="Escribe tu pregunta..." onkeypress="handleChatKeyPress(event)">
                 <button class="btn" onclick="sendChatMessage()">Enviar</button>
             </div>
+            </div>
         </div>
-    </div>
 
     <script>
         let currentStats = null;
@@ -351,14 +351,14 @@
 
         // Cargar datos
         async function loadData() {
-            const fromDate = document.getElementById('fromDate').value;
-            const toDate = document.getElementById('toDate').value;
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
             const storeSelect = document.getElementById('storeSelect');
             const selectedStores = Array.from(storeSelect.selectedOptions).map(option => option.value).filter(id => id);
-            
+                
             showLoading(true);
             hideMessages();
-
+                
             try {
                 const response = await fetch('/api/stats', {
                     method: 'POST',
@@ -389,8 +389,8 @@
 
         // Sincronizar datos
         async function syncData() {
-            const fromDate = document.getElementById('fromDate').value;
-            const toDate = document.getElementById('toDate').value;
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
             
             showLoading(true);
             hideMessages();
@@ -401,14 +401,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fromDate, toDate })
                 });
-
+                
                 const data = await response.json();
                 
                 if (data.success) {
                     showSuccess('Sincronización completada: ' + data.message);
                     // Recargar datos después de sincronizar
                     setTimeout(() => loadData(), 1000);
-                } else {
+                            } else {
                     showError('Error en sincronización: ' + data.error);
                 }
             } catch (error) {
@@ -427,23 +427,23 @@
                     <h3>📊 Total de Órdenes</h3>
                     <div class="value">${stats.totalOrders.toLocaleString()}</div>
                     <div class="label">Órdenes</div>
-                </div>
+                                    </div>
                 <div class="stat-card">
                     <h3>💰 Ingresos Totales</h3>
                     <div class="value">$${stats.totalRevenue.toLocaleString()}</div>
                     <div class="label">Pesos</div>
-                </div>
+                            </div>
                 <div class="stat-card">
                     <h3>📈 Promedio por Orden</h3>
                     <div class="value">$${stats.averageOrderValue.toLocaleString()}</div>
                     <div class="label">Pesos</div>
-                </div>
+                        </div>
                 <div class="stat-card">
                     <h3>🏪 Tiendas Activas</h3>
                     <div class="value">${stats.storeBreakdown.filter(s => s.order_count > 0).length}</div>
                     <div class="label">Tiendas</div>
-                </div>
-            `;
+                        </div>
+                    `;
         }
 
         // Actualizar gráficos
@@ -494,26 +494,26 @@
             }
             
             charts.products = new Chart(ctx, {
-                type: 'bar',
-                data: {
+                                   type: 'bar',
+                                   data: {
                     labels: productsData.map(p => p.name),
-                    datasets: [{
+                                       datasets: [{
                         label: 'Ingresos',
                         data: productsData.map(p => p.total_revenue),
                         backgroundColor: '#667eea',
                         borderColor: '#764ba2',
                         borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
+                                       }]
+                                   },
+                                   options: {
+                                       responsive: true,
+                                       scales: {
+                                           y: {
                             beginAtZero: true
                         }
-                    }
-                }
-            });
+                                       }
+                                   }
+                               });
         }
 
         function updateStoresChart(storesData) {
@@ -524,26 +524,26 @@
             }
             
             charts.stores = new Chart(ctx, {
-                type: 'bar',
-                data: {
+                            type: 'bar',
+                            data: {
                     labels: storesData.map(s => s.store_name),
-                    datasets: [{
+                                datasets: [{
                         label: 'Ingresos',
                         data: storesData.map(s => s.total_amount),
                         backgroundColor: '#36A2EB',
                         borderColor: '#1E88E5',
                         borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
                     scales: {
                         y: {
                             beginAtZero: true
                         }
-                    }
-                }
-            });
+                            }
+                        }
+                    });
         }
 
         // Chat con IA
@@ -559,7 +559,7 @@
             
             try {
                 const response = await fetch('/api/chat', {
-                    method: 'POST',
+                        method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message,

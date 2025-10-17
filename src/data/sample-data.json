@@ -1,0 +1,206 @@
+{
+  "stores": [
+    {
+      "store_id": "63953",
+      "store_name": "Subway Lacroze",
+      "email": "63953@linisco.com.ar"
+    },
+    {
+      "store_id": "66220", 
+      "store_name": "Subway Corrientes",
+      "email": "66220@linisco.com.ar"
+    },
+    {
+      "store_id": "72267",
+      "store_name": "Subway Ortiz", 
+      "email": "72267@linisco.com.ar"
+    },
+    {
+      "store_id": "30036",
+      "store_name": "Daniel Lacroze",
+      "email": "30036@linisco.com.ar"
+    },
+    {
+      "store_id": "30038",
+      "store_name": "Daniel Corrientes",
+      "email": "30038@linisco.com.ar"
+    },
+    {
+      "store_id": "10019",
+      "store_name": "Daniel Ortiz",
+      "email": "10019@linisco.com.ar"
+    },
+    {
+      "store_id": "10020",
+      "store_name": "Seitu Juramento",
+      "email": "10020@linisco.com.ar"
+    }
+  ],
+  "sample_orders": [
+    {
+      "linisco_id": 1001,
+      "store_id": "63953",
+      "id_sale_order": 2001,
+      "order_date": "2025-10-17T10:30:00Z",
+      "paymentmethod": "cash",
+      "total": 1500,
+      "discount": 0,
+      "products": [
+        {
+          "name": "Sub de Pollo",
+          "quantity": 1,
+          "sale_price": 1500
+        }
+      ]
+    },
+    {
+      "linisco_id": 1002,
+      "store_id": "63953", 
+      "id_sale_order": 2002,
+      "order_date": "2025-10-17T11:15:00Z",
+      "paymentmethod": "cc_rappiol",
+      "total": 2400,
+      "discount": 0,
+      "products": [
+        {
+          "name": "Sub de Carne",
+          "quantity": 1,
+          "sale_price": 1800
+        },
+        {
+          "name": "Bebida",
+          "quantity": 1,
+          "sale_price": 600
+        }
+      ]
+    },
+    {
+      "linisco_id": 1003,
+      "store_id": "66220",
+      "id_sale_order": 2003,
+      "order_date": "2025-10-17T12:00:00Z",
+      "paymentmethod": "cc_pedidosyaft",
+      "total": 3200,
+      "discount": 200,
+      "products": [
+        {
+          "name": "Combo Familiar",
+          "quantity": 1,
+          "sale_price": 3400
+        }
+      ]
+    },
+    {
+      "linisco_id": 1004,
+      "store_id": "72267",
+      "id_sale_order": 2004,
+      "order_date": "2025-10-17T13:30:00Z",
+      "paymentmethod": "cc_pedidosyaol",
+      "total": 1800,
+      "discount": 0,
+      "products": [
+        {
+          "name": "Sub Vegetariano",
+          "quantity": 1,
+          "sale_price": 1800
+        }
+      ]
+    },
+    {
+      "linisco_id": 1005,
+      "store_id": "30036",
+      "id_sale_order": 2005,
+      "order_date": "2025-10-17T14:45:00Z",
+      "paymentmethod": "cash",
+      "total": 4500,
+      "discount": 0,
+      "products": [
+        {
+          "name": "Helado 1/2 Kilo",
+          "quantity": 1,
+          "sale_price": 4500
+        }
+      ]
+    },
+    {
+      "linisco_id": 1006,
+      "store_id": "30038",
+      "id_sale_order": 2006,
+      "order_date": "2025-10-17T15:20:00Z",
+      "paymentmethod": "cc_rappiol",
+      "total": 2800,
+      "discount": 0,
+      "products": [
+        {
+          "name": "Helado 1/4 Kilo",
+          "quantity": 2,
+          "sale_price": 1400
+        }
+      ]
+    },
+    {
+      "linisco_id": 1007,
+      "store_id": "10019",
+      "id_sale_order": 2007,
+      "order_date": "2025-10-17T16:10:00Z",
+      "paymentmethod": "cash",
+      "total": 3200,
+      "discount": 0,
+      "products": [
+        {
+          "name": "Café Premium",
+          "quantity": 2,
+          "sale_price": 1600
+        }
+      ]
+    },
+    {
+      "linisco_id": 1008,
+      "store_id": "10020",
+      "id_sale_order": 2008,
+      "order_date": "2025-10-17T17:00:00Z",
+      "paymentmethod": "cc_pedidosyaft",
+      "total": 2100,
+      "discount": 100,
+      "products": [
+        {
+          "name": "Sushi Roll",
+          "quantity": 1,
+          "sale_price": 2200
+        }
+      ]
+    }
+  ],
+  "sample_products": [
+    {
+      "name": "Sub de Pollo",
+      "times_sold": 15,
+      "total_revenue": 22500,
+      "store_id": "63953"
+    },
+    {
+      "name": "Sub de Carne", 
+      "times_sold": 12,
+      "total_revenue": 21600,
+      "store_id": "63953"
+    },
+    {
+      "name": "Combo Familiar",
+      "times_sold": 8,
+      "total_revenue": 25600,
+      "store_id": "66220"
+    },
+    {
+      "name": "Sub Vegetariano",
+      "times_sold": 6,
+      "total_revenue": 10800,
+      "store_id": "72267"
+    },
+    {
+      "name": "Helado 1/2 Kilo",
+      "times_sold": 10,
+      "total_revenue": 45000,
+      "store_id": "30036"
+    }
+  ]
+}
