@@ -283,7 +283,8 @@ app.post('/api/stats', async (req, res) => {
     
     if (storeId && storeId.length > 0) {
       if (dbType === 'postgresql') {
-        statsQuery += ` AND so.store_id = ANY($3)`;
+        const placeholders = storeId.map((_, index) => `$${index + 3}`).join(',');
+        statsQuery += ` AND so.store_id IN (${placeholders})`;
       } else {
         statsQuery += ` AND so.store_id IN (${storeId.map(() => '?').join(',')})`;
       }
@@ -312,7 +313,8 @@ app.post('/api/stats', async (req, res) => {
     
     if (storeId && storeId.length > 0) {
       if (dbType === 'postgresql') {
-        paymentQuery += ` AND so.store_id = ANY($3)`;
+        const placeholders = storeId.map((_, index) => `$${index + 3}`).join(',');
+        paymentQuery += ` AND so.store_id IN (${placeholders})`;
       } else {
         paymentQuery += ` AND so.store_id IN (${storeId.map(() => '?').join(',')})`;
       }
@@ -353,7 +355,8 @@ app.post('/api/stats', async (req, res) => {
     
     if (storeId && storeId.length > 0) {
       if (dbType === 'postgresql') {
-        productsQuery += ` AND sp.store_id = ANY($3)`;
+        const placeholders = storeId.map((_, index) => `$${index + 3}`).join(',');
+        productsQuery += ` AND sp.store_id IN (${placeholders})`;
       } else {
         productsQuery += ` AND sp.store_id IN (${storeId.map(() => '?').join(',')})`;
       }
