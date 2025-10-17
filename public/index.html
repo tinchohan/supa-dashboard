@@ -1122,23 +1122,27 @@
                         </div>
                     `;
                     
-                    // Agregar desglose por medios de pago (solo 2 líneas: Efectivo y Otros)
+                    // Agregar desglose por medios de pago (Efectivo, Apps, Otros)
                     if (stats.payment_breakdown && stats.payment_breakdown.length > 0) {
-                        const cashData = stats.payment_breakdown.find(p => p.payment_method === 'cash') || { total_amount: 0, order_count: 0 };
-                        const otherPayments = stats.payment_breakdown.filter(p => p.payment_method !== 'cash');
-                        const otherTotal = otherPayments.reduce((sum, p) => sum + p.total_amount, 0);
-                        const otherCount = otherPayments.reduce((sum, p) => sum + p.order_count, 0);
+                        const efectivoData = stats.payment_breakdown.find(p => p.payment_category === 'Efectivo') || { total_amount: 0, order_count: 0 };
+                        const appsData = stats.payment_breakdown.find(p => p.payment_category === 'Apps') || { total_amount: 0, order_count: 0 };
+                        const otrosData = stats.payment_breakdown.find(p => p.payment_category === 'Otros') || { total_amount: 0, order_count: 0 };
                         
                         statsCards += `
                         <div class="stat-card">
                                 <h3>💰 Efectivo</h3>
-                                <div class="value">$${cashData.total_amount.toLocaleString()}</div>
-                                <div class="unit">${cashData.order_count} órdenes</div>
+                                <div class="value">$${efectivoData.total_amount.toLocaleString()}</div>
+                                <div class="unit">${efectivoData.order_count} órdenes</div>
+                        </div>
+                        <div class="stat-card">
+                                <h3>📱 Apps</h3>
+                                <div class="value">$${appsData.total_amount.toLocaleString()}</div>
+                                <div class="unit">${appsData.order_count} órdenes</div>
                         </div>
                         <div class="stat-card">
                                 <h3>💳 Otros Medios</h3>
-                                <div class="value">$${otherTotal.toLocaleString()}</div>
-                                <div class="unit">${otherCount} órdenes</div>
+                                <div class="value">$${otrosData.total_amount.toLocaleString()}</div>
+                                <div class="unit">${otrosData.order_count} órdenes</div>
                         </div>
                     `;
                     }
