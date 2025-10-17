@@ -428,6 +428,56 @@ app.post('/api/init-db', async (req, res) => {
   }
 });
 
+// Endpoint para productos top
+app.get('/api/top-products', async (req, res) => {
+  try {
+    const { fromDate, toDate, limit = 50 } = req.query;
+    
+    console.log(`🛍️ Top products request - fromDate: ${fromDate}, toDate: ${toDate}, limit: ${limit}`);
+    
+    const paymentColumn = getPaymentColumn();
+    
+    // Query para productos más vendidos
+    let productsQuery = `
+      SELECT
+        sp.name,
+        sp.fixed_name,
+        s.store_name,
+        s.store_id,
+        COUNT(*) as times_sold,
+        SUM(sp.quantity) as total_quantity,
+        SUM(sp.sale_price * sp.quantity) as total_revenue,
+        AVG(sp.sale_price) as avg_price
+      FROM sale_products sp
+      JOIN sale_orders so ON sp.id_sale_order = so.linisco_id
+      JOIN stores s ON sp.store_id = s.store_id
+      WHERE DATE(so.order_date) BETWEEN ? AND ?
+    `;
+    
+    const productsParams = [fromDate, toDate];
+    
+    productsQuery += `
+      GROUP BY sp.name, sp.fixed_name, s.store_id, s.store_name
+      ORDER BY total_revenue DESC
+      LIMIT ?
+    `;
+    
+    productsParams.push(parseInt(limit));
+    
+    if (dbType === 'postgresql') {
+      const result = await db.query(productsQuery, productsParams);
+      res.json({ success: true, data: result.rows });
+    } else {
+      const result = db.prepare(productsQuery).all(...productsParams);
+      res.json({ success: true, data: result });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error en /api/top-products:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Endpoint para sincronización
 app.post('/api/sync', async (req, res) => {
   try {
