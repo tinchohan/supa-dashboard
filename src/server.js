@@ -4,9 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { connectDatabase, getDatabase } from './database/connection.js';
-import LiniscoSyncService from './services/liniscoSync.js';
-import LocalDataService from './services/localDataService.js';
+import ExternalApiService from './services/externalApiService.js';
 import AIService from './services/aiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,94 +21,16 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Servicios
-const syncService = new LiniscoSyncService();
-const localDataService = new LocalDataService();
+const apiService = new ExternalApiService();
 const aiService = new AIService();
 
-// Inicializar base de datos
-async function initializeDatabase() {
-  try {
-    const db = await getDatabase();
-    
-    // Ejecutar esquema
-    const fs = await import('fs');
-    const schemaPath = path.join(__dirname, 'database', 'schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    
-    await db.query(schema);
-    console.log('✅ Esquema de base de datos ejecutado');
-    
-    // Insertar tiendas
-    const storesPath = path.join(__dirname, 'config', 'stores.json');
-    const stores = JSON.parse(fs.readFileSync(storesPath, 'utf8'));
-    
-    for (const store of stores) {
-      await db.query(`
-        INSERT INTO stores (store_id, store_name, email, password) 
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (store_id) DO NOTHING
-      `, [store.store_id, store.store_name, store.email, store.password]);
-    }
-    
-    console.log('✅ Tiendas insertadas');
-    
-  } catch (error) {
-    console.error('❌ Error inicializando base de datos:', error);
-  }
-}
-
 // Endpoints
-
-// Inicializar base de datos
-app.post('/api/init-db', async (req, res) => {
-  try {
-    await initializeDatabase();
-    res.json({ success: true, message: 'Base de datos inicializada correctamente' });
-  } catch (error) {
-    console.error('❌ Error inicializando base de datos:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Sincronizar datos
-app.post('/api/sync', async (req, res) => {
-  try {
-    const { fromDate = '2025-01-01', toDate = '2025-12-31', useLocal = true } = req.body;
-    
-    console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
-    
-    const db = await getDatabase();
-    
-    if (useLocal) {
-      // Usar datos locales
-      const result = await localDataService.syncToPostgreSQL(db);
-      res.json({ 
-        success: true, 
-        message: 'Datos locales sincronizados a PostgreSQL',
-        data: result
-      });
-    } else {
-      // Intentar sincronizar con Linisco
-      const result = await syncService.syncAllStores(fromDate, toDate, db);
-      res.json({ 
-        success: true, 
-        message: `Sincronización con Linisco completada con ${result.totalRecords} registros`,
-        data: result
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ Error en sincronización:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 // Obtener tiendas
 app.get('/api/stores', async (req, res) => {
   try {
-    // Usar datos locales primero
-    const localStores = localDataService.getStores();
-    res.json({ success: true, data: localStores });
+    const stores = apiService.getStores();
+    res.json({ success: true, data: stores });
   } catch (error) {
     console.error('❌ Error obteniendo tiendas:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -122,8 +42,9 @@ app.post('/api/stats', async (req, res) => {
   try {
     const { fromDate, toDate, storeId } = req.body;
     
-    // Usar datos locales
-    const stats = localDataService.getStats(fromDate, toDate, storeId);
+    console.log(`📊 Obteniendo estadísticas desde ${fromDate} hasta ${toDate}`);
+    
+    const stats = await apiService.getStats(fromDate, toDate, storeId);
     
     res.json({
       success: true,
@@ -132,6 +53,24 @@ app.post('/api/stats', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Top productos
+app.get('/api/top-products', async (req, res) => {
+  try {
+    const { fromDate, toDate, storeId, limit = 5 } = req.query;
+    
+    const stats = await apiService.getStats(fromDate, toDate, storeId ? [storeId] : null);
+    
+    res.json({
+      success: true,
+      data: stats.topProducts.slice(0, parseInt(limit))
+    });
+    
+  } catch (error) {
+    console.error('❌ Error obteniendo productos:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -190,12 +129,42 @@ app.post('/api/ai/charts', async (req, res) => {
   }
 });
 
+// Sincronizar datos (ahora solo refresca cache)
+app.post('/api/sync', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31' } = req.body;
+    
+    console.log(`🔄 Refrescando datos desde ${fromDate} hasta ${toDate}`);
+    
+    // Limpiar cache para forzar nueva consulta
+    apiService.clearCache();
+    
+    // Obtener datos frescos
+    const stats = await apiService.getStats(fromDate, toDate);
+    
+    res.json({ 
+      success: true, 
+      message: `Datos actualizados: ${stats.totalOrders} órdenes, $${stats.totalRevenue.toLocaleString()} ingresos`,
+      data: {
+        totalOrders: stats.totalOrders,
+        totalRevenue: stats.totalRevenue,
+        stores: stats.storeBreakdown.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error sincronizando datos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
     success: true, 
     message: 'Servidor funcionando correctamente',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    mode: 'API Externa'
   });
 });
 
@@ -227,20 +196,11 @@ app.get('/api/test-linisco', async (req, res) => {
 });
 
 // Iniciar servidor
-async function startServer() {
-  try {
-    await connectDatabase();
-    await initializeDatabase();
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-      console.log(`📊 Dashboard disponible en http://localhost:${PORT}`);
-      console.log(`🔗 API disponible en http://localhost:${PORT}/api`);
-    });
-  } catch (error) {
-    console.error('❌ Error iniciando servidor:', error);
-    process.exit(1);
-  }
-}
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
+  console.log(`📊 Dashboard disponible en http://localhost:${PORT}`);
+  console.log(`🔗 API disponible en http://localhost:${PORT}/api`);
+  console.log(`🌐 Modo: API Externa (sin base de datos local)`);
+});
 
-startServer();
+export default app;

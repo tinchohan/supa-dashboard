@@ -1,6 +1,6 @@
-# 🏪 Linisco Dashboard
+# 🏪 Linisco Dashboard - API Externa + AI
 
-Dashboard moderno de análisis de ventas con PostgreSQL y IA para el sistema Linisco.
+Dashboard moderno de análisis de ventas conectado directamente a la API externa de Linisco con IA.
 
 ## ✨ Características
 
@@ -10,15 +10,15 @@ Dashboard moderno de análisis de ventas con PostgreSQL y IA para el sistema Lin
 - **💳 Métodos de pago**: Efectivo, Apps, Otros
 - **🤖 Chat con IA**: Análisis inteligente con Google Gemini
 - **📈 Gráficos interactivos**: Visualizaciones dinámicas con Chart.js
-- **🔄 Sincronización automática**: Con API de Linisco
-- **🗄️ PostgreSQL**: Base de datos robusta y escalable
+- **🔄 Datos en tiempo real**: Conectado directamente a API de Linisco
+- **⚡ Sin base de datos local**: Arquitectura simplificada
 
 ## 🚀 Instalación
 
 ### Requisitos
 - Node.js 18+
-- PostgreSQL 12+
 - Cuenta de Google Gemini API
+- Acceso a API de Linisco
 
 ### Instalación local
 
@@ -39,30 +39,22 @@ cp env.example .env
 # Editar .env con tus credenciales
 ```
 
-4. **Configurar PostgreSQL**
+4. **Configurar variables de entorno**
 ```bash
-# Crear base de datos
-createdb linisco_dashboard
-
-# Configurar DATABASE_URL en .env
-DATABASE_URL=postgresql://username:password@localhost:5432/linisco_dashboard
+# .env
+GEMINI_API_KEY=your_gemini_api_key
+LINISCO_API_URL=https://api.linisco.com.ar
+NODE_ENV=development
 ```
 
-5. **Inicializar base de datos**
+5. **Iniciar servidor**
 ```bash
-# Iniciar servidor
 npm start
-
-# En otra terminal, inicializar DB
-curl -X POST http://localhost:3000/api/init-db
 ```
 
-6. **Sincronizar datos**
-```bash
-# Sincronizar con Linisco
-curl -X POST http://localhost:3000/api/sync \
-  -H "Content-Type: application/json" \
-  -d '{"fromDate": "2025-01-01", "toDate": "2025-12-31"}'
+6. **Acceder al dashboard**
+```
+http://localhost:3000
 ```
 
 ## 🌐 Despliegue en Railway
@@ -79,23 +71,15 @@ railway login
 railway link
 ```
 
-### 2. Configurar PostgreSQL
-```bash
-# Agregar PostgreSQL
-railway add postgresql
-
-# Obtener DATABASE_URL
-railway variables
-```
-
-### 3. Configurar variables de entorno
+### 2. Configurar variables de entorno
 ```bash
 # Configurar variables
 railway variables set GEMINI_API_KEY=your_api_key
+railway variables set LINISCO_API_URL=https://api.linisco.com.ar
 railway variables set NODE_ENV=production
 ```
 
-### 4. Desplegar
+### 3. Desplegar
 ```bash
 # Desplegar
 railway up
@@ -106,32 +90,17 @@ railway up
 ```
 src/
 ├── config/
-│   └── stores.json          # Configuración de tiendas
-├── database/
-│   ├── connection.js        # Conexión a PostgreSQL
-│   └── schema.sql          # Esquema de base de datos
+│   └── stores.json              # Configuración de tiendas
 ├── services/
-│   ├── liniscoSync.js      # Sincronización con Linisco
-│   └── aiService.js        # Servicio de IA
-└── server.js               # Servidor principal
+│   ├── externalApiService.js    # Servicio de API externa
+│   └── aiService.js            # Servicio de IA
+└── server.js                   # Servidor principal
 
 public/
-└── index.html              # Frontend del dashboard
+└── index.html                  # Frontend del dashboard
 ```
 
 ## 🔧 API Endpoints
-
-### Inicialización
-- `POST /api/init-db` - Inicializar base de datos
-
-### Sincronización
-- `POST /api/sync` - Sincronizar datos con Linisco
-  ```json
-  {
-    "fromDate": "2025-01-01",
-    "toDate": "2025-12-31"
-  }
-  ```
 
 ### Datos
 - `GET /api/stores` - Obtener lista de tiendas
@@ -143,6 +112,19 @@ public/
     "storeId": ["63953", "66220"]
   }
   ```
+- `GET /api/top-products` - Top productos
+  ```
+  /api/top-products?fromDate=2025-01-01&toDate=2025-12-31&limit=5
+  ```
+
+### Sincronización
+- `POST /api/sync` - Refrescar datos (limpiar cache)
+  ```json
+  {
+    "fromDate": "2025-01-01",
+    "toDate": "2025-12-31"
+  }
+  ```
 
 ### IA
 - `POST /api/chat` - Chat con IA
@@ -151,6 +133,7 @@ public/
 
 ### Salud
 - `GET /api/health` - Health check
+- `GET /api/test-linisco` - Test conectividad API
 
 ## 🎯 Uso
 
@@ -158,7 +141,7 @@ public/
 2. **Seleccionar fechas**: Usar los controles de fecha
 3. **Filtrar por tienda**: Seleccionar tiendas específicas
 4. **Cargar datos**: Hacer clic en "Cargar Datos"
-5. **Sincronizar**: Hacer clic en "Sincronizar" para obtener datos frescos
+5. **Refrescar**: Hacer clic en "Sincronizar" para obtener datos frescos
 6. **Chat con IA**: Usar el chat para análisis inteligente
 
 ## 🔑 Configuración de tiendas
@@ -207,6 +190,22 @@ GEMINI_API_KEY=your_api_key_here
 - Comparación entre tiendas
 - Rendimiento individual
 
+## 🏗️ Arquitectura
+
+### Flujo de datos
+1. **Frontend** → Solicita datos al servidor
+2. **Servidor** → Consulta API externa de Linisco
+3. **API Linisco** → Retorna datos en tiempo real
+4. **Servidor** → Procesa y calcula estadísticas
+5. **Frontend** → Muestra dashboard actualizado
+
+### Ventajas
+- ✅ **Sin base de datos local**: Menos complejidad
+- ✅ **Datos en tiempo real**: Siempre actualizados
+- ✅ **Arquitectura simple**: Fácil mantenimiento
+- ✅ **Escalable**: Sin límites de almacenamiento local
+- ✅ **Cache inteligente**: Mejora rendimiento
+
 ## 🛠️ Desarrollo
 
 ### Scripts disponibles
@@ -215,11 +214,10 @@ npm start          # Iniciar servidor
 npm run dev        # Modo desarrollo con watch
 ```
 
-### Estructura de base de datos
-- `stores`: Información de tiendas
-- `sale_orders`: Órdenes de venta
-- `sale_products`: Productos vendidos
-- `psessions`: Sesiones de trabajo
+### Cache
+- Los datos se cachean por 5 minutos
+- Usar `/api/sync` para forzar actualización
+- Cache automático por fecha y tienda
 
 ## 📝 Licencia
 
@@ -243,4 +241,4 @@ Para soporte técnico o preguntas:
 
 ---
 
-**¡Disfruta analizando tus ventas con IA! 🚀**
+**¡Disfruta analizando tus ventas con IA en tiempo real! 🚀**
