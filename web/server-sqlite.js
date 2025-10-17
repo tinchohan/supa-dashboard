@@ -166,6 +166,7 @@ app.post('/api/stats', async (req, res) => {
     
     console.log('📊 Stats request - storeId:', storeId);
     console.log('📅 Fechas solicitadas - fromDate:', fromDate, 'toDate:', toDate);
+    console.log('🔍 Request body completo:', req.body);
     
     // Estadísticas generales
     let statsQuery = `
@@ -249,6 +250,9 @@ app.post('/api/stats', async (req, res) => {
     
     const paymentStmt = dbToUse.prepare(paymentQuery);
     const paymentBreakdown = paymentStmt.all(...paymentParams);
+    
+    console.log('💳 Payment breakdown resultado:', paymentBreakdown);
+    console.log('💳 Número de categorías encontradas:', paymentBreakdown.length);
     
     // Desglose por tienda (siempre mostrar, pero filtrar según selección)
     let storeQuery = `
