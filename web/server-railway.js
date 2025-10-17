@@ -378,8 +378,47 @@ app.get('/api/stores', async (req, res) => {
   }
 });
 
+// Endpoint para inicializar base de datos
+app.post('/api/init-db', async (req, res) => {
+  try {
+    console.log('🔧 Inicializando base de datos...');
+    await initializeDatabase();
+    res.json({ success: true, message: 'Base de datos inicializada correctamente' });
+  } catch (error) {
+    console.error('❌ Error inicializando base de datos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Endpoint para sincronización
 app.post('/api/sync', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31', forceSync = false } = req.body;
+    
+    console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
+    
+    // Importar el servicio de sincronización
+    const MultiStoreSyncService = (await import('../services/multiStoreSyncService-sqlite.js')).default;
+    const syncService = new MultiStoreSyncService();
+    
+    // Sincronizar todas las tiendas
+    const result = await syncService.syncAllStores(fromDate, toDate);
+    
+    console.log('✅ Sincronización completada:', result);
+    res.json({ 
+      success: result.success, 
+      message: `Sincronización completada con ${result.totalRecords} registros`,
+      data: result
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en /api/sync:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Endpoint para sincronización específica de tienda (para compatibilidad con API externa)
+app.post('/api/sync/store', async (req, res) => {
   try {
     const { storeId, password, data } = req.body;
     
@@ -529,7 +568,7 @@ app.post('/api/sync', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error en /api/sync:', error);
+    console.error('❌ Error en /api/sync/store:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
