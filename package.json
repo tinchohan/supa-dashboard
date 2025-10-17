@@ -1,47 +1,30 @@
 {
-  "name": "linisco-supabase-sync",
-  "version": "1.0.0",
-  "description": "Sincronización de datos de API Linisco a Supabase",
-  "main": "index.js",
+  "name": "linisco-dashboard",
+  "version": "2.0.0",
+  "description": "Dashboard de estadísticas de ventas con PostgreSQL y IA",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "start:prod": "NODE_ENV=production node web/server-clean.js",
-    "start:sqlite": "NODE_ENV=production node web/server-sqlite.js",
-    "start:railway": "node web/server-railway.js",
-    "start:local": "node web/server-local.js",
-    "sync": "node sync.js",
-    "dev": "node --watch index.js",
-    "web": "node web/server.js",
-    "ngrok": "node scripts/start-ngrok.js",
-    "ngrok-simple": "start-ngrok.bat",
-    "ngrok-ps": "powershell -ExecutionPolicy Bypass -File start-ngrok.ps1",
-    "setup-stores": "node scripts/setup-stores.js setup",
-    "test-stores": "node scripts/setup-stores.js test",
-    "config-stores": "node scripts/setup-stores.js config",
-    "check-duplicates": "node tools/checkDuplicates.js check",
-    "clean-duplicates": "node tools/checkDuplicates.js clean"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
-    "@google/genai": "^1.25.0",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.6.0",
-    "better-sqlite3": "^9.2.2",
     "chart.js": "^4.4.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "node-cron": "^3.0.3",
-    "node-fetch": "^3.3.2",
-    "openai": "^4.20.1",
-    "pg": "^8.16.3",
-    "sqlite3": "^5.1.6"
+    "pg": "^8.16.3"
   },
   "keywords": [
-    "supabase",
+    "dashboard",
+    "postgresql",
     "api",
-    "sync",
-    "linisco"
+    "linisco",
+    "ai",
+    "charts"
   ],
   "author": "",
   "license": "MIT"
