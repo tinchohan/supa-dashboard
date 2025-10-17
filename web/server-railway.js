@@ -150,23 +150,17 @@ async function initializeDatabase() {
       await db.query('CREATE INDEX IF NOT EXISTS idx_sale_products_store_id ON sale_products(store_id)');
       await db.query('CREATE INDEX IF NOT EXISTS idx_sale_products_order ON sale_products(id_sale_order)');
       
-      // Insertar tiendas por defecto
-      const stores = [
-        { store_id: '66220', store_name: 'Subway Lacroze', password: 'subway123' },
-        { store_id: '66221', store_name: 'Subway Corrientes', password: 'subway123' },
-        { store_id: '66222', store_name: 'Subway Ortiz', password: 'subway123' },
-        { store_id: '10019', store_name: 'Daniel Lacroze', password: 'daniel123' },
-        { store_id: '30038', store_name: 'Daniel Corrientes', password: 'daniel123' },
-        { store_id: '10019', store_name: 'Daniel Ortiz', password: 'daniel123' },
-        { store_id: '30039', store_name: 'Seitu Juramento', password: 'seitu123' }
-      ];
+      // Leer tiendas desde archivo JSON
+      const storesPath = path.join(__dirname, '../config/stores.json');
+      const storesData = JSON.parse(fs.readFileSync(storesPath, 'utf8'));
       
-      for (const store of stores) {
+      for (const store of storesData) {
         await db.query(`
           INSERT INTO stores (store_id, store_name, email, password) 
           VALUES ($1, $2, $3, $4)
           ON CONFLICT (store_id) DO NOTHING
-        `, [store.store_id, store.store_name, `${store.store_id}@linisco.com.ar`, store.password]);
+        `, [store.store_id, store.store_name, store.email, store.password]);
+        console.log(`✅ Tienda insertada: ${store.store_name} (${store.store_id})`);
       }
       
       console.log('✅ Schema PostgreSQL ejecutado');
@@ -230,22 +224,16 @@ async function initializeDatabase() {
       db.prepare('CREATE INDEX IF NOT EXISTS idx_sale_products_store_id ON sale_products(store_id)').run();
       db.prepare('CREATE INDEX IF NOT EXISTS idx_sale_products_order ON sale_products(id_sale_order)').run();
       
-      // Insertar tiendas
-      const stores = [
-        { store_id: '66220', store_name: 'Subway Lacroze', password: 'subway123' },
-        { store_id: '66221', store_name: 'Subway Corrientes', password: 'subway123' },
-        { store_id: '66222', store_name: 'Subway Ortiz', password: 'subway123' },
-        { store_id: '10019', store_name: 'Daniel Lacroze', password: 'daniel123' },
-        { store_id: '30038', store_name: 'Daniel Corrientes', password: 'daniel123' },
-        { store_id: '10019', store_name: 'Daniel Ortiz', password: 'daniel123' },
-        { store_id: '30039', store_name: 'Seitu Juramento', password: 'seitu123' }
-      ];
+      // Leer tiendas desde archivo JSON
+      const storesPath = path.join(__dirname, '../config/stores.json');
+      const storesData = JSON.parse(fs.readFileSync(storesPath, 'utf8'));
       
-      for (const store of stores) {
+      for (const store of storesData) {
         db.prepare(`
           INSERT OR REPLACE INTO stores (store_id, store_name, email, password) 
           VALUES (?, ?, ?, ?)
-        `).run(store.store_id, store.store_name, `${store.store_id}@linisco.com.ar`, store.password);
+        `).run(store.store_id, store.store_name, store.email, store.password);
+        console.log(`✅ Tienda insertada: ${store.store_name} (${store.store_id})`);
       }
       
       console.log('✅ Base de datos SQLite inicializada');

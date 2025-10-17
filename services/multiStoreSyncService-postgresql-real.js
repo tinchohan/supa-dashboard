@@ -1,5 +1,11 @@
 import pkg from 'pg';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 const { Client } = pkg;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class MultiStoreSyncService {
   constructor() {
@@ -16,15 +22,9 @@ class MultiStoreSyncService {
     try {
       console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
       
-      const stores = [
-        { store_id: '66220', store_name: 'Subway Lacroze', password: 'subway123' },
-        { store_id: '66221', store_name: 'Subway Corrientes', password: 'subway123' },
-        { store_id: '66222', store_name: 'Subway Ortiz', password: 'subway123' },
-        { store_id: '10019', store_name: 'Daniel Lacroze', password: 'daniel123' },
-        { store_id: '30038', store_name: 'Daniel Corrientes', password: 'daniel123' },
-        { store_id: '10019', store_name: 'Daniel Ortiz', password: 'daniel123' },
-        { store_id: '30039', store_name: 'Seitu Juramento', password: 'seitu123' }
-      ];
+      // Leer tiendas desde archivo JSON
+      const storesPath = path.join(__dirname, '../config/stores.json');
+      const stores = JSON.parse(fs.readFileSync(storesPath, 'utf8'));
 
       const results = [];
       let totalRecords = 0;
