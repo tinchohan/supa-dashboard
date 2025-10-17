@@ -1079,15 +1079,11 @@
                 
                 const selectedStores = getSelectedStores();
                 
-                console.log('📊 Cargando estadísticas para tiendas:', selectedStores);
-                console.log('📅 Fechas:', fromDate, 'a', toDate);
-                
                 const requestBody = {
                     fromDate: fromDate,
                     toDate: toDate,
                     storeId: selectedStores.length > 0 ? selectedStores : null
                 };
-                console.log('📤 Request body:', requestBody);
                 
                 // Enviar como POST con JSON para manejar múltiples tiendas correctamente
                 const response = await fetch('/api/stats', {
@@ -1098,7 +1094,6 @@
                     body: JSON.stringify(requestBody)
                 });
                 const data = await response.json();
-                console.log('📊 Response completa:', data);
                 
                 if (data.success) {
                     const stats = data.data;
@@ -1129,13 +1124,9 @@
                     
                     // Agregar desglose por medios de pago (Efectivo, Apps, Otros)
                     if (stats.payment_breakdown && stats.payment_breakdown.length > 0) {
-                        console.log('💳 Payment breakdown recibido:', stats.payment_breakdown);
                         const efectivoData = stats.payment_breakdown.find(p => p.payment_category === 'Efectivo') || { total_amount: 0, order_count: 0 };
                         const appsData = stats.payment_breakdown.find(p => p.payment_category === 'Apps') || { total_amount: 0, order_count: 0 };
                         const otrosData = stats.payment_breakdown.find(p => p.payment_category === 'Otros') || { total_amount: 0, order_count: 0 };
-                        console.log('💰 Efectivo data:', efectivoData);
-                        console.log('📱 Apps data:', appsData);
-                        console.log('💳 Otros data:', otrosData);
                         
                         statsCards += `
                         <div class="stat-card">

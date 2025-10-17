@@ -166,7 +166,6 @@ app.post('/api/stats', async (req, res) => {
     
     console.log('📊 Stats request - storeId:', storeId);
     console.log('📅 Fechas solicitadas - fromDate:', fromDate, 'toDate:', toDate);
-    console.log('🔍 Request body completo:', req.body);
     
     // Estadísticas generales
     let statsQuery = `
@@ -192,8 +191,6 @@ app.post('/api/stats', async (req, res) => {
         storeIds = [storeId];
       }
       
-      console.log('🏪 StoreIds procesados:', storeIds);
-      console.log('🏪 Tipos de storeIds:', storeIds.map(id => typeof id));
       
       if (storeIds.length > 0) {
         const placeholders = storeIds.map(() => '?').join(',');
@@ -202,8 +199,6 @@ app.post('/api/stats', async (req, res) => {
       }
     }
     
-    console.log('🔍 Query de estadísticas:', statsQuery);
-    console.log('📊 Parámetros:', params);
     
     const stats = dbToUse.prepare(statsQuery).get(...params);
     
@@ -250,9 +245,6 @@ app.post('/api/stats', async (req, res) => {
     
     const paymentStmt = dbToUse.prepare(paymentQuery);
     const paymentBreakdown = paymentStmt.all(...paymentParams);
-    
-    console.log('💳 Payment breakdown resultado:', paymentBreakdown);
-    console.log('💳 Número de categorías encontradas:', paymentBreakdown.length);
     
     // Desglose por tienda (siempre mostrar, pero filtrar según selección)
     let storeQuery = `
@@ -326,7 +318,6 @@ app.post('/api/stats', async (req, res) => {
     const productStmt = dbToUse.prepare(productQuery);
     const productResult = productStmt.get(...productParams);
     
-    console.log('✅ Estadísticas obtenidas:', stats);
     res.json({
       success: true,
       data: {
