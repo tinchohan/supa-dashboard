@@ -150,6 +150,25 @@ async function initializeDatabase() {
       await db.query('CREATE INDEX IF NOT EXISTS idx_sale_products_store_id ON sale_products(store_id)');
       await db.query('CREATE INDEX IF NOT EXISTS idx_sale_products_order ON sale_products(id_sale_order)');
       
+      // Insertar tiendas por defecto
+      const stores = [
+        { store_id: '66220', store_name: 'Subway Lacroze', password: 'subway123' },
+        { store_id: '66221', store_name: 'Subway Corrientes', password: 'subway123' },
+        { store_id: '66222', store_name: 'Subway Ortiz', password: 'subway123' },
+        { store_id: '10019', store_name: 'Daniel Lacroze', password: 'daniel123' },
+        { store_id: '30038', store_name: 'Daniel Corrientes', password: 'daniel123' },
+        { store_id: '10019', store_name: 'Daniel Ortiz', password: 'daniel123' },
+        { store_id: '30039', store_name: 'Seitu Juramento', password: 'seitu123' }
+      ];
+      
+      for (const store of stores) {
+        await db.query(`
+          INSERT INTO stores (store_id, store_name, email, password) 
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (store_id) DO NOTHING
+        `, [store.store_id, store.store_name, `${store.store_id}@linisco.com.ar`, store.password]);
+      }
+      
       console.log('✅ Schema PostgreSQL ejecutado');
       
     } else {
@@ -379,7 +398,18 @@ app.get('/api/stores', async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Error en /api/stores:', error);
-    res.status(500).json({ success: false, error: error.message });
+    // Si hay error, intentar inicializar la base de datos
+    try {
+      console.log('🔄 Intentando inicializar base de datos...');
+      await initializeDatabase();
+      const result = dbType === 'postgresql' 
+        ? (await db.query('SELECT store_id, store_name FROM stores ORDER BY store_name')).rows
+        : db.prepare('SELECT store_id, store_name FROM stores ORDER BY store_name').all();
+      res.json({ success: true, data: result });
+    } catch (initError) {
+      console.error('❌ Error inicializando base de datos:', initError);
+      res.status(500).json({ success: false, error: initError.message });
+    }
   }
 });
 
@@ -402,8 +432,17 @@ app.post('/api/sync', async (req, res) => {
     
     console.log(`🔄 Iniciando sincronización desde ${fromDate} hasta ${toDate}`);
     
-    // Importar el servicio de sincronización
-    const MultiStoreSyncService = (await import('../services/multiStoreSyncService-sqlite.js')).default;
+    // Asegurar que la base de datos esté inicializada
+    await initializeDatabase();
+    
+    // Importar el servicio de sincronización apropiado
+    let MultiStoreSyncService;
+    if (dbType === 'postgresql') {
+      MultiStoreSyncService = (await import('../services/multiStoreSyncService-postgresql-real.js')).default;
+    } else {
+      MultiStoreSyncService = (await import('../services/multiStoreSyncService-sqlite.js')).default;
+    }
+    
     const syncService = new MultiStoreSyncService();
     
     // Sincronizar todas las tiendas
