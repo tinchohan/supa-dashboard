@@ -1124,9 +1124,13 @@
                     
                     // Agregar desglose por medios de pago (Efectivo, Apps, Otros)
                     if (stats.payment_breakdown && stats.payment_breakdown.length > 0) {
+                        console.log('🔍 Payment breakdown recibido:', stats.payment_breakdown);
                         const efectivoData = stats.payment_breakdown.find(p => p.payment_category === 'Efectivo') || { total_amount: 0, order_count: 0 };
                         const appsData = stats.payment_breakdown.find(p => p.payment_category === 'Apps') || { total_amount: 0, order_count: 0 };
                         const otrosData = stats.payment_breakdown.find(p => p.payment_category === 'Otros') || { total_amount: 0, order_count: 0 };
+                        console.log('💰 Efectivo:', efectivoData);
+                        console.log('📱 Apps:', appsData);
+                        console.log('💳 Otros:', otrosData);
                         
                         statsCards += `
                         <div class="stat-card">
