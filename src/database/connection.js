@@ -10,10 +10,25 @@ export async function connectDatabase() {
   if (db) return db;
   
   try {
-    db = new Client({
-      connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/linisco_dashboard',
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    // Configuración para Railway
+    const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/linisco_dashboard';
+    
+    // Si estamos en Railway, usar configuración específica
+    if (process.env.RAILWAY_ENVIRONMENT === 'production') {
+      db = new Client({
+        connectionString: connectionString,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 30000,
+        query_timeout: 20000
+      });
+    } else {
+      // Configuración local
+      db = new Client({
+        connectionString: connectionString,
+        ssl: false
+      });
+    }
     
     await db.connect();
     console.log('✅ Conectado a PostgreSQL');
@@ -28,6 +43,16 @@ export async function getDatabase() {
   if (!db) {
     await connectDatabase();
   }
+  
+  // Verificar si la conexión está activa
+  try {
+    await db.query('SELECT 1');
+  } catch (error) {
+    console.log('🔄 Reconectando a PostgreSQL...');
+    db = null;
+    await connectDatabase();
+  }
+  
   return db;
 }
 
