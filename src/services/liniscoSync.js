@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const storesPath = path.join(__dirname, '../config/stores.json');
 const stores = JSON.parse(fs.readFileSync(storesPath, 'utf8'));
 
-const LINISCO_BASE_URL = 'https://api.linisco.com.ar';
+const LINISCO_BASE_URL = process.env.LINISCO_API_URL || 'https://api.linisco.com.ar';
 
 class LiniscoSyncService {
   constructor() {
@@ -21,10 +21,18 @@ class LiniscoSyncService {
   async authenticate(store) {
     try {
       console.log(`🔐 Autenticando ${store.store_name} (${store.store_id})...`);
+      console.log(`🌐 URL de API: ${LINISCO_BASE_URL}`);
+      console.log(`📧 Email: ${store.email}`);
       
       const response = await axios.post(`${LINISCO_BASE_URL}/auth/login`, {
         email: store.email,
         password: store.password
+      }, {
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Linisco-Dashboard/2.0.0'
+        }
       });
 
       if (response.data && response.data.token) {
@@ -36,6 +44,13 @@ class LiniscoSyncService {
       }
     } catch (error) {
       console.error(`❌ Error autenticando ${store.store_name}:`, error.message);
+      if (error.response) {
+        console.error(`📊 Status: ${error.response.status}`);
+        console.error(`📋 Headers:`, error.response.headers);
+        console.error(`📄 Data:`, error.response.data);
+      } else if (error.request) {
+        console.error(`🌐 Request error:`, error.request);
+      }
       throw error;
     }
   }

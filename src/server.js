@@ -272,6 +272,33 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test endpoint para verificar API de Linisco
+app.get('/api/test-linisco', async (req, res) => {
+  try {
+    const axios = (await import('axios')).default;
+    const response = await axios.get(process.env.LINISCO_API_URL || 'https://api.linisco.com.ar', {
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'Linisco-Dashboard/2.0.0'
+      }
+    });
+    
+    res.json({
+      success: true,
+      message: 'API de Linisco accesible',
+      status: response.status,
+      url: process.env.LINISCO_API_URL || 'https://api.linisco.com.ar'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error conectando a API de Linisco',
+      error: error.message,
+      url: process.env.LINISCO_API_URL || 'https://api.linisco.com.ar'
+    });
+  }
+});
+
 // Iniciar servidor
 async function startServer() {
   try {
