@@ -1,4 +1,5 @@
-const { Client } = require('pg');
+import pkg from 'pg';
+const { Client } = pkg;
 
 class MultiStoreSyncService {
   constructor() {
@@ -204,4 +205,4 @@ class MultiStoreSyncService {
   }
 }
 
-module.exports = MultiStoreSyncService;
+export default MultiStoreSyncService;
