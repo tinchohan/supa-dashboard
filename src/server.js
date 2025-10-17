@@ -4,8 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import ExternalApiService from './services/externalApiService.js';
-import AIService from './services/aiService.js';
+import ApiService from './services/apiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,142 +20,9 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Servicios
-const apiService = new ExternalApiService();
-const aiService = new AIService();
+const apiService = new ApiService();
 
 // Endpoints
-
-// Obtener tiendas
-app.get('/api/stores', async (req, res) => {
-  try {
-    const stores = apiService.getStores();
-    res.json({ success: true, data: stores });
-  } catch (error) {
-    console.error('❌ Error obteniendo tiendas:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Estadísticas generales
-app.post('/api/stats', async (req, res) => {
-  try {
-    const { fromDate, toDate, storeId } = req.body;
-    
-    console.log(`📊 Obteniendo estadísticas desde ${fromDate} hasta ${toDate}`);
-    
-    const stats = await apiService.getStats(fromDate, toDate, storeId);
-    
-    res.json({
-      success: true,
-      data: stats
-    });
-    
-  } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Top productos
-app.get('/api/top-products', async (req, res) => {
-  try {
-    const { fromDate, toDate, storeId, limit = 5 } = req.query;
-    
-    const stats = await apiService.getStats(fromDate, toDate, storeId ? [storeId] : null);
-    
-    res.json({
-      success: true,
-      data: stats.topProducts.slice(0, parseInt(limit))
-    });
-    
-  } catch (error) {
-    console.error('❌ Error obteniendo productos:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Chat con IA
-app.post('/api/chat', async (req, res) => {
-  try {
-    const { message, context } = req.body;
-    
-    const response = await aiService.chat(message, context);
-    
-    res.json({
-      success: true,
-      response
-    });
-    
-  } catch (error) {
-    console.error('❌ Error en chat:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Análisis de IA
-app.post('/api/ai/analysis', async (req, res) => {
-  try {
-    const { stats } = req.body;
-    
-    const analysis = await aiService.generateSalesAnalysis(stats);
-    
-    res.json({
-      success: true,
-      analysis
-    });
-    
-  } catch (error) {
-    console.error('❌ Error generando análisis:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Datos para gráficos
-app.post('/api/ai/charts', async (req, res) => {
-  try {
-    const { stats, chartType } = req.body;
-    
-    const chartData = await aiService.generateChartData(stats, chartType);
-    
-    res.json({
-      success: true,
-      chartData
-    });
-    
-  } catch (error) {
-    console.error('❌ Error generando gráfico:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Sincronizar datos (ahora solo refresca cache)
-app.post('/api/sync', async (req, res) => {
-  try {
-    const { fromDate = '2025-01-01', toDate = '2025-12-31' } = req.body;
-    
-    console.log(`🔄 Refrescando datos desde ${fromDate} hasta ${toDate}`);
-    
-    // Limpiar cache para forzar nueva consulta
-    apiService.clearCache();
-    
-    // Obtener datos frescos
-    const stats = await apiService.getStats(fromDate, toDate);
-    
-    res.json({ 
-      success: true, 
-      message: `Datos actualizados: ${stats.totalOrders} órdenes, $${stats.totalRevenue.toLocaleString()} ingresos`,
-      data: {
-        totalOrders: stats.totalOrders,
-        totalRevenue: stats.totalRevenue,
-        stores: stats.storeBreakdown.length
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error sincronizando datos:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -164,18 +30,105 @@ app.get('/api/health', (req, res) => {
     success: true, 
     message: 'Servidor funcionando correctamente',
     timestamp: new Date().toISOString(),
-    mode: 'API Externa'
+    mode: 'API Externa con Fallback'
   });
 });
 
-// Test endpoint para verificar API de Linisco
-app.get('/api/test-linisco', async (req, res) => {
+// Obtener tiendas
+app.get('/api/stores', async (req, res) => {
+  try {
+    const result = await apiService.getData('/api/stores', 'all', 'demo@linisco.com.ar', 'demo123');
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo tiendas:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener estadísticas
+app.post('/api/stats', async (req, res) => {
+  try {
+    const { fromDate, toDate, storeId } = req.body;
+    
+    console.log(`📊 Obteniendo estadísticas desde ${fromDate} hasta ${toDate}`);
+    
+    const result = await apiService.getStats(fromDate, toDate, storeId);
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener top productos
+app.get('/api/top-products', async (req, res) => {
+  try {
+    const { fromDate, toDate, storeId, limit = 5 } = req.query;
+    
+    const result = await apiService.getStats(fromDate, toDate, storeId);
+    
+    if (result.success) {
+      const topProducts = result.data.topProducts.slice(0, parseInt(limit));
+      res.json({ success: true, data: topProducts });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo productos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Sincronizar datos (refrescar cache)
+app.post('/api/sync', async (req, res) => {
+  try {
+    const { fromDate = '2025-01-01', toDate = '2025-12-31' } = req.body;
+    
+    console.log(`🔄 Refrescando datos desde ${fromDate} hasta ${toDate}`);
+    
+    // Limpiar cache
+    apiService.clearCache();
+    
+    // Obtener datos frescos
+    const result = await apiService.getStats(fromDate, toDate);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: `Datos actualizados: ${result.data.totalOrders} órdenes, $${result.data.totalRevenue.toLocaleString()} ingresos`,
+        data: {
+          totalOrders: result.data.totalOrders,
+          totalRevenue: result.data.totalRevenue,
+          stores: result.data.storeBreakdown.length
+        }
+      });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error sincronizando datos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test de conectividad con API
+app.get('/api/test-api', async (req, res) => {
   try {
     const axios = (await import('axios')).default;
     const response = await axios.get(process.env.LINISCO_API_URL || 'https://api.linisco.com.ar', {
       timeout: 5000,
       headers: {
-        'User-Agent': 'Linisco-Dashboard/2.0.0'
+        'User-Agent': 'Linisco-Dashboard/1.0.0'
       }
     });
     
@@ -186,9 +139,9 @@ app.get('/api/test-linisco', async (req, res) => {
       url: process.env.LINISCO_API_URL || 'https://api.linisco.com.ar'
     });
   } catch (error) {
-    res.status(500).json({
+    res.json({
       success: false,
-      message: 'Error conectando a API de Linisco',
+      message: 'API de Linisco no accesible, usando modo demo',
       error: error.message,
       url: process.env.LINISCO_API_URL || 'https://api.linisco.com.ar'
     });
@@ -200,7 +153,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
   console.log(`📊 Dashboard disponible en http://localhost:${PORT}`);
   console.log(`🔗 API disponible en http://localhost:${PORT}/api`);
-  console.log(`🌐 Modo: API Externa (sin base de datos local)`);
+  console.log(`🌐 Modo: API Externa con Fallback a Datos Demo`);
 });
 
 export default app;
