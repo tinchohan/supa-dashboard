@@ -206,10 +206,14 @@ app.post('/api/stats', async (req, res) => {
     
     const stats = dbToUse.prepare(statsQuery).get(...params);
     
-    // Desglose por medios de pago
+    // Desglose por medios de pago (categorización específica)
     let paymentQuery = `
       SELECT 
-        so.payment_method,
+        CASE 
+          WHEN so.payment_method = 'cash' OR so.payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
+          WHEN so.payment_method = 'rappiol' OR so.payment_method = 'pedidosyaol' THEN 'Rappi + PedidosYa OL'
+          ELSE 'Otros'
+        END as payment_category,
         COUNT(*) as order_count,
         SUM(so.total - so.discount) as total_amount
       FROM sale_orders so
@@ -234,7 +238,14 @@ app.post('/api/stats', async (req, res) => {
       }
     }
     
-    paymentQuery += ' GROUP BY so.payment_method ORDER BY total_amount DESC';
+    paymentQuery += ` 
+      GROUP BY 
+        CASE 
+          WHEN so.payment_method = 'cash' OR so.payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
+          WHEN so.payment_method = 'rappiol' OR so.payment_method = 'pedidosyaol' THEN 'Rappi + PedidosYa OL'
+          ELSE 'Otros'
+        END 
+      ORDER BY total_amount DESC`;
     
     const paymentStmt = dbToUse.prepare(paymentQuery);
     const paymentBreakdown = paymentStmt.all(...paymentParams);
@@ -415,8 +426,8 @@ app.post('/api/chat', async (req, res) => {
       const paymentQuery = `
         SELECT 
           CASE 
-            WHEN payment_method = 'cash' THEN 'Efectivo'
-            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
+            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
             ELSE 'Otros'
           END as payment_category,
           COUNT(*) as count,
@@ -426,8 +437,8 @@ app.post('/api/chat', async (req, res) => {
         ${storeId ? 'AND store_id = ?' : ''}
         GROUP BY 
           CASE 
-            WHEN payment_method = 'cash' THEN 'Efectivo'
-            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
+            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
             ELSE 'Otros'
           END
         ORDER BY count DESC
@@ -596,8 +607,8 @@ app.post('/api/ai/charts', async (req, res) => {
       const paymentQuery = `
         SELECT 
           CASE 
-            WHEN payment_method = 'cash' THEN 'Efectivo'
-            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
+            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
             ELSE 'Otros'
           END as payment_category,
           COUNT(*) as count,
@@ -607,8 +618,8 @@ app.post('/api/ai/charts', async (req, res) => {
         ${storeId ? 'AND store_id = ?' : ''}
         GROUP BY 
           CASE 
-            WHEN payment_method = 'cash' THEN 'Efectivo'
-            WHEN payment_method LIKE 'cd_%' OR payment_method LIKE 'cc_%' THEN 'Tarjeta'
+            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
+            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
             ELSE 'Otros'
           END
         ORDER BY count DESC
