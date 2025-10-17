@@ -12,7 +12,7 @@ class ApiService {
   // Obtener datos con autenticación automática
   async getData(endpoint, storeId, email, password, params = {}) {
     try {
-      // Obtener token
+      // Obtener token (usará credenciales de Railway automáticamente)
       const authResult = await this.authService.getToken(storeId, email, password);
       if (!authResult.success) {
         console.log('⚠️ Error de autenticación, usando datos de muestra');
@@ -261,9 +261,22 @@ class ApiService {
   // Obtener estadísticas calculadas
   async getStats(fromDate, toDate, storeId = null) {
     try {
-      // Por ahora, usar directamente datos de muestra
-      console.log('📊 Usando datos de muestra para estadísticas');
-      const orders = this.getMockOrders({ from_date: fromDate, to_date: toDate });
+      console.log(`📊 Obteniendo estadísticas reales desde ${fromDate} hasta ${toDate}`);
+      
+      // Intentar obtener datos reales de la API
+      const ordersResult = await this.getData('/api/sale-orders', storeId || '63953', null, null, {
+        from_date: fromDate,
+        to_date: toDate
+      });
+
+      let orders = [];
+      if (ordersResult.success && ordersResult.data.length > 0) {
+        console.log(`✅ Obtenidas ${ordersResult.data.length} órdenes reales`);
+        orders = ordersResult.data;
+      } else {
+        console.log('⚠️ No hay datos reales, usando datos de muestra');
+        orders = this.getMockOrders({ from_date: fromDate, to_date: toDate });
+      }
       
       // Calcular estadísticas
       const totalOrders = orders.length;

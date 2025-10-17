@@ -37,7 +37,8 @@ app.get('/api/health', (req, res) => {
 // Obtener tiendas
 app.get('/api/stores', async (req, res) => {
   try {
-    const result = await apiService.getData('/api/stores', 'all', 'demo@linisco.com.ar', 'demo123');
+    // Usar credenciales de Railway automáticamente
+    const result = await apiService.getData('/api/stores', '63953'); // Usar cualquier tienda para obtener la lista
     
     if (result.success) {
       res.json({ success: true, data: result.data });

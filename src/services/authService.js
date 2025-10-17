@@ -61,6 +61,23 @@ class AuthService {
       return this.tokens.get(cacheKey);
     }
 
+    // Si no se proporcionan credenciales, usar las de Railway
+    if (!email || !password) {
+      const envEmail = process.env[`STORE_${storeId}_EMAIL`];
+      const envPassword = process.env[`STORE_${storeId}_PASSWORD`];
+      
+      if (envEmail && envPassword) {
+        email = envEmail;
+        password = envPassword;
+        console.log(`🔐 Usando credenciales de Railway para tienda ${storeId}`);
+      } else {
+        // Fallback a credenciales demo
+        email = 'demo@linisco.com.ar';
+        password = 'demo123';
+        console.log(`⚠️ Usando credenciales demo para tienda ${storeId}`);
+      }
+    }
+
     const result = await this.login(email, password);
     if (result.success) {
       this.tokens.set(cacheKey, result.token);
