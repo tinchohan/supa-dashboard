@@ -10,6 +10,7 @@
     "start:sqlite": "NODE_ENV=production node web/server-sqlite.js",
     "start:postgresql": "NODE_ENV=production node web/server-postgresql.js",
     "start:postgresql-sqlite": "node web/server-postgresql-sqlite.js",
+    "start:postgresql-real": "node web/server-postgresql-real.js",
     "start:local": "node web/server-local.js",
     "sync": "node sync.js",
     "dev": "node --watch index.js",
@@ -21,6 +22,7 @@
     "test-stores": "node scripts/setup-stores.js test",
     "config-stores": "node scripts/setup-stores.js test",
     "migrate-to-postgresql": "node scripts/migrate-sqlite-to-postgresql.js",
+    "migrate-to-postgresql-real": "node scripts/migrate-to-postgresql-real.js",
     "check-duplicates": "node tools/checkDuplicates.js check",
     "clean-duplicates": "node tools/checkDuplicates.js clean"
   },
