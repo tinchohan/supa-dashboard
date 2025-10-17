@@ -1,0 +1,12 @@
+[33mcommit 35854c24cb80438a7778e4bdf476768fe7756049[m
+Author: Tinch <tinch@example.com>
+Date:   Fri Oct 17 08:09:39 2025 -0300
+
+    fix: corregir frontend para usar payment_category
+    
+    - Cambiar de payment_method a payment_category en frontend
+    - Agregar categoría Apps (cc_rappiol + cc_pedidosyaol)
+    - Mostrar Efectivo, Apps y Otros en estadísticas generales
+    - Corregir problema de efectivo en 0 y Apps no visible
+
+public/index.html
