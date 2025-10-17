@@ -426,8 +426,8 @@ app.post('/api/chat', async (req, res) => {
       const paymentQuery = `
         SELECT 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
-            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
+            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END as payment_category,
           COUNT(*) as count,
@@ -437,8 +437,8 @@ app.post('/api/chat', async (req, res) => {
         ${storeId ? 'AND store_id = ?' : ''}
         GROUP BY 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
-            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
+            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END
         ORDER BY count DESC
@@ -607,8 +607,8 @@ app.post('/api/ai/charts', async (req, res) => {
       const paymentQuery = `
         SELECT 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
-            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
+            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END as payment_category,
           COUNT(*) as count,
@@ -618,8 +618,8 @@ app.post('/api/ai/charts', async (req, res) => {
         ${storeId ? 'AND store_id = ?' : ''}
         GROUP BY 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'pedidosyaef' THEN 'Efectivo + PedidosYa EF'
-            WHEN payment_method = 'rappiol' OR payment_method = 'pedidosyaol' OR payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Rappi + PedidosYa OL'
+            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END
         ORDER BY count DESC
