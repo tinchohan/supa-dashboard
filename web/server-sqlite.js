@@ -18,6 +18,44 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Función helper para detectar el nombre de la columna de payment method
+function getPaymentColumn(db) {
+  try {
+    // Intentar con payment_method primero (local)
+    db.prepare(`SELECT payment_method FROM sale_orders LIMIT 1`).get();
+    console.log('🔍 Detectada columna: payment_method (local)');
+    return 'payment_method';
+  } catch (error) {
+    try {
+      // Si falla, intentar con paymentmethod (producción)
+      db.prepare(`SELECT paymentmethod FROM sale_orders LIMIT 1`).get();
+      console.log('🔍 Detectada columna: paymentmethod (producción)');
+      return 'paymentmethod';
+    } catch (error2) {
+      console.log('❌ No se pudo detectar la columna de payment method');
+      console.log('🔍 Error payment_method:', error.message);
+      console.log('🔍 Error paymentmethod:', error2.message);
+      
+      // Intentar detectar dinámicamente
+      try {
+        const tableInfo = db.prepare("PRAGMA table_info(sale_orders)").all();
+        const paymentColumn = tableInfo.find(col => 
+          col.name === 'payment_method' || col.name === 'paymentmethod'
+        );
+        
+        if (paymentColumn) {
+          console.log(`🔍 Detectada columna dinámicamente: ${paymentColumn.name}`);
+          return paymentColumn.name;
+        }
+      } catch (error3) {
+        console.log('❌ Error en detección dinámica:', error3.message);
+      }
+      
+      return 'payment_method'; // Fallback
+    }
+  }
+}
+
 // Usar SQLite siempre (más simple y flexible)
 // En Railway, usar la misma ruta que el endpoint de inicialización
 const isRailway = process.env.RAILWAY_ENVIRONMENT === 'production';
@@ -213,12 +251,21 @@ app.post('/api/stats', async (req, res) => {
     
     const stats = dbToUse.prepare(statsQuery).get(...params);
     
+    // Detectar nombre de columna de payment method
+    const paymentColumn = getPaymentColumn(dbToUse);
+    console.log('🔍 Columna de payment method detectada:', paymentColumn);
+    console.log('🔍 Entorno actual:', {
+      isRailway: isRailway,
+      NODE_ENV: process.env.NODE_ENV,
+      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
+    });
+    
     // Desglose por medios de pago (categorización corregida)
     let paymentQuery = `
       SELECT 
         CASE 
-          WHEN so.payment_method = 'cash' OR so.payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
-          WHEN so.payment_method = 'cc_rappiol' OR so.payment_method = 'cc_pedidosyaol' THEN 'Apps'
+          WHEN so.${paymentColumn} = 'cash' OR so.${paymentColumn} = 'cc_pedidosyaft' THEN 'Efectivo'
+          WHEN so.${paymentColumn} = 'cc_rappiol' OR so.${paymentColumn} = 'cc_pedidosyaol' THEN 'Apps'
           ELSE 'Otros'
         END as payment_category,
         COUNT(*) as order_count,
@@ -248,14 +295,17 @@ app.post('/api/stats', async (req, res) => {
     paymentQuery += ` 
       GROUP BY 
         CASE 
-          WHEN so.payment_method = 'cash' OR so.payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
-          WHEN so.payment_method = 'cc_rappiol' OR so.payment_method = 'cc_pedidosyaol' THEN 'Apps'
+          WHEN so.${paymentColumn} = 'cash' OR so.${paymentColumn} = 'cc_pedidosyaft' THEN 'Efectivo'
+          WHEN so.${paymentColumn} = 'cc_rappiol' OR so.${paymentColumn} = 'cc_pedidosyaol' THEN 'Apps'
           ELSE 'Otros'
         END 
       ORDER BY total_amount DESC`;
     
     const paymentStmt = dbToUse.prepare(paymentQuery);
     const paymentBreakdown = paymentStmt.all(...paymentParams);
+    console.log('🔍 Payment breakdown resultado:', paymentBreakdown);
+    console.log('🔍 Parámetros de payment query:', paymentParams);
+    console.log('🔍 Query de payment ejecutada:', paymentQuery);
     
     // Desglose por tienda (siempre mostrar, pero filtrar según selección)
     let storeQuery = `
@@ -432,8 +482,8 @@ app.post('/api/chat', async (req, res) => {
       const paymentQuery = `
         SELECT 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
-            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
+            WHEN paymentmethod = 'cash' OR paymentmethod = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN paymentmethod = 'cc_rappiol' OR paymentmethod = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END as payment_category,
           COUNT(*) as count,
@@ -443,8 +493,8 @@ app.post('/api/chat', async (req, res) => {
         ${storeId ? 'AND store_id = ?' : ''}
         GROUP BY 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
-            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
+            WHEN paymentmethod = 'cash' OR paymentmethod = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN paymentmethod = 'cc_rappiol' OR paymentmethod = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END
         ORDER BY count DESC
@@ -613,8 +663,8 @@ app.post('/api/ai/charts', async (req, res) => {
       const paymentQuery = `
         SELECT 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
-            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
+            WHEN paymentmethod = 'cash' OR paymentmethod = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN paymentmethod = 'cc_rappiol' OR paymentmethod = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END as payment_category,
           COUNT(*) as count,
@@ -624,8 +674,8 @@ app.post('/api/ai/charts', async (req, res) => {
         ${storeId ? 'AND store_id = ?' : ''}
         GROUP BY 
           CASE 
-            WHEN payment_method = 'cash' OR payment_method = 'cc_pedidosyaft' THEN 'Efectivo'
-            WHEN payment_method = 'cc_rappiol' OR payment_method = 'cc_pedidosyaol' THEN 'Apps'
+            WHEN paymentmethod = 'cash' OR paymentmethod = 'cc_pedidosyaft' THEN 'Efectivo'
+            WHEN paymentmethod = 'cc_rappiol' OR paymentmethod = 'cc_pedidosyaol' THEN 'Apps'
             ELSE 'Otros'
           END
         ORDER BY count DESC
@@ -1263,7 +1313,7 @@ app.post('/api/init-db', async (req, res) => {
         id_sale_order INTEGER,
         order_date TIMESTAMP NOT NULL,
         id_session INTEGER,
-        payment_method TEXT,
+        paymentmethod TEXT,
         total DECIMAL(10,2) NOT NULL,
         discount DECIMAL(10,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

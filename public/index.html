@@ -1094,9 +1094,11 @@
                     body: JSON.stringify(requestBody)
                 });
                 const data = await response.json();
+                console.log('🔍 Respuesta completa del backend:', data);
                 
                 if (data.success) {
                     const stats = data.data;
+                    console.log('🔍 Stats data recibido:', stats);
                     
                     // Crear tarjetas de estadísticas básicas
                     let statsCards = `
