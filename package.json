@@ -9,6 +9,7 @@
     "start:prod": "NODE_ENV=production node web/server-clean.js",
     "start:sqlite": "NODE_ENV=production node web/server-sqlite.js",
     "start:postgresql": "NODE_ENV=production node web/server-postgresql.js",
+    "start:postgresql-sqlite": "node web/server-postgresql-sqlite.js",
     "start:local": "node web/server-local.js",
     "sync": "node sync.js",
     "dev": "node --watch index.js",
