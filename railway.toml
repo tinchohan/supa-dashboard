@@ -2,19 +2,19 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npm run start:sqlite"
+startCommand = "npm run start:railway"
 healthcheckPath = "/"
-healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
-# Solo servicio web (sin base de datos)
+[environments.production]
+variables = { NODE_ENV = "production", PORT = "3000" }
+
 [[services]]
-name = "web"
+name = "linisco-dashboard"
 source = "."
 
-# Variables de entorno para SQLite
-[services.web.environment]
-NODE_ENV = "production"
-PORT = "3000"
-USE_SQLITE = "true"
+[services.database]
+type = "postgresql"
+version = "15"

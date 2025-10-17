@@ -1,13 +1,30 @@
 {
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "NIXPACKS"
+  "name": "linisco-dashboard",
+  "description": "Sistema de sincronización Linisco con PostgreSQL en Railway",
+  "version": "2.0.0",
+  "main": "web/server-railway.js",
+  "scripts": {
+    "start": "node web/server-railway.js"
   },
-  "deploy": {
-    "startCommand": "npm run start:prod",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 100,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.16.3",
+    "better-sqlite3": "^9.2.2",
+    "@google/genai": "^1.25.0",
+    "node-fetch": "^3.3.2"
+  },
+  "railway": {
+    "database": {
+      "type": "postgresql",
+      "version": "15"
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "PORT": "3000"
+    }
   }
 }
