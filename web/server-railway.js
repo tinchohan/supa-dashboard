@@ -263,6 +263,8 @@ app.post('/api/stats', async (req, res) => {
     
     console.log('📊 Stats request - storeId:', storeId);
     console.log('📅 Fechas solicitadas - fromDate:', fromDate, 'toDate:', toDate);
+    console.log('🔍 Tipo de base de datos:', dbType);
+    console.log('🔍 Objeto db:', typeof db, db ? 'existe' : 'no existe');
     
     const paymentColumn = getPaymentColumn();
     console.log('🔍 Columna de payment method detectada:', paymentColumn);
@@ -291,7 +293,11 @@ app.post('/api/stats', async (req, res) => {
       statsParams.push(...(Array.isArray(storeId) ? storeId : [storeId]));
     }
     
+    console.log('🔍 Ejecutando consulta stats:', statsQuery);
+    console.log('🔍 Parámetros stats:', statsParams);
+    
     const statsResult = await db.query(statsQuery, statsParams);
+    console.log('🔍 Resultado stats:', statsResult);
     const stats = statsResult.rows[0];
     
     // Query para breakdown de métodos de pago
@@ -330,6 +336,9 @@ app.post('/api/stats', async (req, res) => {
         END
       ORDER BY total_amount DESC
     `;
+    
+    console.log('🔍 Ejecutando consulta payment:', paymentQuery);
+    console.log('🔍 Parámetros payment:', paymentParams);
     
     const paymentResult = await db.query(paymentQuery, paymentParams);
     console.log('🔍 Payment breakdown resultado:', paymentResult.rows);
@@ -371,7 +380,11 @@ app.post('/api/stats', async (req, res) => {
     
     productsParams.push(50);
     
+    console.log('🔍 Ejecutando consulta products:', productsQuery);
+    console.log('🔍 Parámetros products:', productsParams);
+    
     const productsResult = await db.query(productsQuery, productsParams);
+    console.log('🔍 Resultado products:', productsResult);
     console.log('✅ Productos obtenidos:', productsResult.rows.length);
     
     res.json({
@@ -434,6 +447,8 @@ app.get('/api/top-products', async (req, res) => {
     const { fromDate, toDate, limit = 50 } = req.query;
     
     console.log(`🛍️ Top products request - fromDate: ${fromDate}, toDate: ${toDate}, limit: ${limit}`);
+    console.log('🔍 Tipo de base de datos:', dbType);
+    console.log('🔍 Objeto db:', typeof db, db ? 'existe' : 'no existe');
     
     const paymentColumn = getPaymentColumn();
     
@@ -464,11 +479,16 @@ app.get('/api/top-products', async (req, res) => {
     
     productsParams.push(parseInt(limit));
     
+    console.log('🔍 Ejecutando consulta top-products:', productsQuery);
+    console.log('🔍 Parámetros top-products:', productsParams);
+    
     if (dbType === 'postgresql') {
       const result = await db.query(productsQuery, productsParams);
+      console.log('🔍 Resultado top-products:', result);
       res.json({ success: true, data: result.rows });
     } else {
       const result = db.prepare(productsQuery).all(...productsParams);
+      console.log('🔍 Resultado top-products:', result);
       res.json({ success: true, data: result });
     }
     
