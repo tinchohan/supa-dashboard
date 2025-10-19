@@ -1,6 +1,19 @@
-# 🏪 Linisco Dashboard - Sistema Híbrido API + MySQL
+# 🏪 Linisco Dashboard - Sistema Híbrido API + Base de Datos
 
-Dashboard moderno de análisis de ventas con sistema híbrido que combina la API de Linisco con base de datos MySQL para máximo rendimiento.
+Dashboard moderno de análisis de ventas con sistema híbrido que combina la API de Linisco con base de datos para máximo rendimiento.
+
+## 🚀 Versiones Disponibles
+
+### 📊 Versión SQLite (Recomendada para Railway)
+- ✅ **Sin configuración externa** - No necesita servicios de base de datos
+- ✅ **Compatible con Railway** - Funciona en el plan gratuito
+- ✅ **Datos persistentes** - Se mantienen entre reinicios
+- ✅ **Rápido y simple** - Solo archivo local
+
+### 🗄️ Versión MySQL (Original)
+- ✅ **Base de datos robusta** - Para aplicaciones grandes
+- ✅ **Alta concurrencia** - Múltiples usuarios simultáneos
+- ✅ **Escalable** - Fácil migración a PostgreSQL
 
 ## ✨ Características
 
@@ -18,7 +31,6 @@ Dashboard moderno de análisis de ventas con sistema híbrido que combina la API
 
 ### Requisitos
 - Node.js 18+
-- Cuenta de Google Gemini API
 - Acceso a API de Linisco
 
 ### Instalación local
@@ -34,39 +46,60 @@ cd supa-dashboard
 npm install
 ```
 
-3. **Configurar variables de entorno**
+3. **Configurar variables de entorno** (opcional)
 ```bash
 cp env.example .env
 # Editar .env con tus credenciales
 ```
 
-4. **Configurar variables de entorno**
+4. **Ejecutar (Elegir una opción)**
+
+#### Opción A: SQLite (Recomendado para Railway)
 ```bash
-# .env
-GEMINI_API_KEY=your_gemini_api_key
-LINISCO_API_URL=https://api.linisco.com.ar
-NODE_ENV=development
+# Desarrollo
+npm run dev:sqlite
+
+# Producción
+npm run start:sqlite
 ```
 
-5. **Iniciar servidor**
+#### Opción B: MySQL (Versión original)
 ```bash
+# Desarrollo
+npm run dev
+
+# Producción
 npm start
 ```
 
-6. **Acceder al dashboard**
+5. **Acceder al dashboard**
 ```
 http://localhost:3000
 ```
 
-## 🌐 Despliegue en Railway con MySQL
+## 🌐 Despliegue en Railway
 
-### 🚀 Despliegue Rápido
+### 🚀 Opción A: SQLite (Recomendado)
 
 1. **Conectar con Railway**
    - Ve a [Railway.app](https://railway.app)
    - Inicia sesión con GitHub
    - Selecciona "Deploy from GitHub repo"
-   - Conecta `tinchohan/supa-dashboard`
+   - Conecta tu repositorio
+
+2. **Configurar comando de inicio**
+   - Cambiar a: `npm run start:sqlite`
+   - Health check: `/api/health`
+
+3. **¡Listo!** Railway despliega automáticamente
+
+### 🗄️ Opción B: MySQL (Para aplicaciones grandes)
+
+1. **Conectar con Railway**
+   - Ve a [Railway.app](https://railway.app)
+   - Inicia sesión con GitHub
+   - Selecciona "Deploy from GitHub repo"
+   - Conecta tu repositorio
 
 2. **Agregar MySQL**
    - En tu proyecto: "New" → "Database" → "Add MySQL"
@@ -93,21 +126,32 @@ http://localhost:3000
 
 4. **¡Listo!** Railway despliega automáticamente
 
-📖 **Guía completa**: Ver [RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)
+📖 **Guías completas**: 
+- SQLite: [RAILWAY_SQLITE_DEPLOYMENT.md](RAILWAY_SQLITE_DEPLOYMENT.md)
+- MySQL: [RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)
 
 ## 📁 Estructura del proyecto
 
 ```
 src/
 ├── config/
-│   └── stores.json              # Configuración de tiendas
+│   └── users.js                    # Configuración de usuarios
 ├── services/
-│   ├── externalApiService.js    # Servicio de API externa
-│   └── aiService.js            # Servicio de IA
-└── server.js                   # Servidor principal
+│   ├── apiService.js               # Servicio de API
+│   ├── authService.js              # Servicio de autenticación
+│   ├── databaseService.js          # Servicio de MySQL
+│   ├── sqliteService.js            # Servicio de SQLite
+│   ├── syncService.js              # Servicio de sincronización MySQL
+│   └── sqliteSyncService.js        # Servicio de sincronización SQLite
+├── server.js                       # Servidor principal (MySQL)
+└── server-sqlite.js                # Servidor principal (SQLite)
 
 public/
-└── index.html                  # Frontend del dashboard
+├── index.html                      # Frontend del dashboard
+└── login.html                      # Página de login
+
+data/                               # Base de datos SQLite (se crea automáticamente)
+└── linisco_dashboard.db            # Archivo de base de datos SQLite
 ```
 
 ## 🔧 API Endpoints
@@ -219,9 +263,18 @@ GEMINI_API_KEY=your_api_key_here
 ## 🛠️ Desarrollo
 
 ### Scripts disponibles
+
+#### SQLite (Recomendado para Railway)
 ```bash
-npm start          # Iniciar servidor
-npm run dev        # Modo desarrollo con watch
+npm run dev:sqlite      # Desarrollo con SQLite
+npm run start:sqlite    # Producción con SQLite
+npm run test:sqlite     # Probar SQLite
+```
+
+#### MySQL (Versión original)
+```bash
+npm run dev             # Desarrollo con MySQL
+npm start               # Producción con MySQL
 ```
 
 ### Cache
@@ -243,12 +296,27 @@ Las contribuciones son bienvenidas. Por favor:
 4. Push a la rama
 5. Abrir un Pull Request
 
+## 📚 Documentación Adicional
+
+- **SQLite**: Ver [README_SQLITE.md](README_SQLITE.md)
+- **Despliegue Railway SQLite**: Ver [RAILWAY_SQLITE_DEPLOYMENT.md](RAILWAY_SQLITE_DEPLOYMENT.md)
+- **Despliegue Railway MySQL**: Ver [RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)
+- **Resumen de migración**: Ver [MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)
+
 ## 📞 Soporte
 
 Para soporte técnico o preguntas:
 - Crear un issue en GitHub
 - Contactar al equipo de desarrollo
 
+## 🎉 ¡Listo para Usar!
+
+Elige tu versión preferida y comienza a usar el dashboard de Linisco:
+
+- **Para Railway**: Usa la versión SQLite (`npm run start:sqlite`)
+- **Para aplicaciones grandes**: Usa la versión MySQL (`npm start`)
+- **Para desarrollo**: Cualquiera de las dos funciona
+
 ---
 
-**¡Disfruta analizando tus ventas con IA en tiempo real! 🚀**
+**¡Disfruta analizando tus ventas con datos en tiempo real! 🚀**

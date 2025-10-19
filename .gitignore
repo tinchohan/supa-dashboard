@@ -11,6 +11,12 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# SQLite database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
 # Logs
 logs
 *.log
@@ -71,15 +77,12 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
-# Test files (keep some for reference)
-test-*.js
-demo-*.js
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db

@@ -279,6 +279,13 @@ class ApiService {
   // Obtener estadísticas calculadas
   async getStats(fromDate, toDate, email = null, password = null) {
     try {
+      // Si no se proporcionan fechas, usar fechas con datos reales
+      if (!fromDate || !toDate) {
+        fromDate = '2025-08-01';
+        toDate = '2025-08-31';
+        console.log('📅 Usando fechas por defecto con datos reales (Agosto 2025)');
+      }
+      
       console.log(`📊 Obteniendo estadísticas reales desde ${fromDate} hasta ${toDate}`);
       
       // Usar credenciales por defecto si no se proporcionan
