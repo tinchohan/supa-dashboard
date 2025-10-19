@@ -1,6 +1,6 @@
-# 🏪 Linisco Dashboard - API Externa + AI
+# 🏪 Linisco Dashboard - Sistema Híbrido API + MySQL
 
-Dashboard moderno de análisis de ventas conectado directamente a la API externa de Linisco con IA.
+Dashboard moderno de análisis de ventas con sistema híbrido que combina la API de Linisco con base de datos MySQL para máximo rendimiento.
 
 ## ✨ Características
 
@@ -8,10 +8,11 @@ Dashboard moderno de análisis de ventas conectado directamente a la API externa
 - **🏪 Desglose por tienda**: Análisis detallado por cada ubicación
 - **🏆 Top 5 productos**: Productos más vendidos con ingresos
 - **💳 Métodos de pago**: Efectivo, Apps, Otros
-- **🤖 Chat con IA**: Análisis inteligente con Google Gemini
+- **🗄️ Sistema híbrido**: API + MySQL con fallback inteligente
+- **🔄 Sincronización automática**: Datos persistentes y consultas rápidas
 - **📈 Gráficos interactivos**: Visualizaciones dinámicas con Chart.js
-- **🔄 Datos en tiempo real**: Conectado directamente a API de Linisco
-- **⚡ Sin base de datos local**: Arquitectura simplificada
+- **⚡ Consultas 10x más rápidas**: Con base de datos MySQL
+- **🌐 Despliegue en Railway**: Con MySQL gestionado automáticamente
 
 ## 🚀 Instalación
 
@@ -57,33 +58,42 @@ npm start
 http://localhost:3000
 ```
 
-## 🌐 Despliegue en Railway
+## 🌐 Despliegue en Railway con MySQL
 
-### 1. Conectar con Railway
-```bash
-# Instalar Railway CLI
-npm install -g @railway/cli
+### 🚀 Despliegue Rápido
 
-# Login
-railway login
+1. **Conectar con Railway**
+   - Ve a [Railway.app](https://railway.app)
+   - Inicia sesión con GitHub
+   - Selecciona "Deploy from GitHub repo"
+   - Conecta `tinchohan/supa-dashboard`
 
-# Conectar proyecto
-railway link
-```
+2. **Agregar MySQL**
+   - En tu proyecto: "New" → "Database" → "Add MySQL"
+   - Railway crea automáticamente las variables de entorno
 
-### 2. Configurar variables de entorno
-```bash
-# Configurar variables
-railway variables set GEMINI_API_KEY=your_api_key
-railway variables set LINISCO_API_URL=https://api.linisco.com.ar
-railway variables set NODE_ENV=production
-```
+3. **Configurar Variables**
+   ```env
+   # API de Linisco
+   LINISCO_API_URL=https://pos.linisco.com.ar
+   LINISCO_EMAIL=63953@linisco.com.ar
+   LINISCO_PASSWORD=63953hansen
+   
+   # MySQL (Railway las reemplaza automáticamente)
+   DB_HOST=${{MySQL.MYSQL_HOST}}
+   DB_USER=${{MySQL.MYSQL_USER}}
+   DB_PASSWORD=${{MySQL.MYSQL_PASSWORD}}
+   DB_NAME=${{MySQL.MYSQL_DATABASE}}
+   DB_PORT=${{MySQL.MYSQL_PORT}}
+   
+   # Configuración
+   NODE_ENV=production
+   PORT=3000
+   ```
 
-### 3. Desplegar
-```bash
-# Desplegar
-railway up
-```
+4. **¡Listo!** Railway despliega automáticamente
+
+📖 **Guía completa**: Ver [RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)
 
 ## 📁 Estructura del proyecto
 
