@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -38,6 +38,27 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-panel {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            height: fit-content;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .controls {
@@ -94,6 +115,10 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
 
         .stats-grid {
@@ -214,6 +239,86 @@
             font-size: 0.9rem;
         }
 
+        /* Chat Styles */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 400px;
+            min-height: 300px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            max-width: 85%;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: #f5f5f5;
+            margin-right: auto;
+        }
+
+        .message.system {
+            background: #fff3e0;
+            text-align: center;
+            font-style: italic;
+            margin: 0 auto;
+        }
+
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -238,6 +343,27 @@
             border-left: 4px solid #363;
         }
 
+        .typing-indicator {
+            display: none;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-style: italic;
+            color: #666;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .chat-panel {
+                order: -1;
+                max-height: 400px;
+            }
+        }
+
         @media (max-width: 768px) {
             .control-group {
                 flex-direction: column;
@@ -254,72 +380,101 @@
     <div class="container">
         <div class="header">
             <h1>🏪 Linisco Dashboard</h1>
-            <p>Análisis de ventas en tiempo real</p>
+            <p>Análisis de ventas en tiempo real con IA</p>
         </div>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="fromDate">Desde:</label>
-                <input type="date" id="fromDate" value="2025-10-17">
+        <div class="main-content">
+            <div class="dashboard">
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="fromDate">Desde:</label>
+                        <input type="date" id="fromDate" value="2025-10-17">
+                        
+                        <label for="toDate">Hasta:</label>
+                        <input type="date" id="toDate" value="2025-10-17">
+                        
+                        <label for="storeSelect">Tienda:</label>
+                        <select id="storeSelect">
+                            <option value="">Todas las tiendas</option>
+                        </select>
+                        
+                        <button class="btn" onclick="loadData()">📊 Cargar Datos</button>
+                        <button class="btn btn-secondary" onclick="syncData()">🔄 Sincronizar</button>
+                    </div>
+                </div>
+
+                <div id="loading" class="loading" style="display: none;">
+                    <h3>🔄 Cargando datos...</h3>
+                </div>
+
+                <div id="error" class="error" style="display: none;"></div>
+                <div id="success" class="success" style="display: none;"></div>
+
+                <div id="stats" class="stats-grid" style="display: none;">
+                    <div class="stat-card">
+                        <h3 id="totalOrders">0</h3>
+                        <p>Total Órdenes</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalRevenue">$0</h3>
+                        <p>Ingresos Totales</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="averageOrder">$0</h3>
+                        <p>Promedio por Orden</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalStores">0</h3>
+                        <p>Tiendas Activas</p>
+                    </div>
+                </div>
+
+                <div id="paymentBreakdown" class="section" style="display: none;">
+                    <h2>💳 Métodos de Pago</h2>
+                    <div class="payment-breakdown" id="paymentList"></div>
+                </div>
+
+                <div id="topProducts" class="section" style="display: none;">
+                    <h2>🏆 Top 5 Productos</h2>
+                    <div class="products-list" id="productsList"></div>
+                </div>
+
+                <div id="storeBreakdown" class="section" style="display: none;">
+                    <h2>🏪 Desglose por Tienda</h2>
+                    <div class="stores-list" id="storesList"></div>
+                </div>
+            </div>
+
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <h3>🤖 Asistente IA</h3>
+                    <p>Pregunta sobre tus ventas</p>
+                </div>
                 
-                <label for="toDate">Hasta:</label>
-                <input type="date" id="toDate" value="2025-10-17">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        ¡Hola! Soy tu asistente de análisis de ventas. Puedo ayudarte a interpretar los datos, identificar tendencias y responder preguntas sobre tu negocio.
+                    </div>
+                </div>
                 
-                <label for="storeSelect">Tienda:</label>
-                <select id="storeSelect">
-                    <option value="">Todas las tiendas</option>
-                </select>
+                <div class="typing-indicator" id="typingIndicator">
+                    El asistente está escribiendo...
+                </div>
                 
-                <button class="btn" onclick="loadData()">📊 Cargar Datos</button>
-                <button class="btn" onclick="syncData()">🔄 Sincronizar</button>
+                <div class="chat-input">
+                    <div class="chat-input-group">
+                        <input type="text" id="chatInput" placeholder="Pregunta sobre tus ventas..." onkeypress="handleChatKeyPress(event)">
+                        <button onclick="sendMessage()">Enviar</button>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <div id="loading" class="loading" style="display: none;">
-            <h3>🔄 Cargando datos...</h3>
-        </div>
-
-        <div id="error" class="error" style="display: none;"></div>
-        <div id="success" class="success" style="display: none;"></div>
-
-        <div id="stats" class="stats-grid" style="display: none;">
-            <div class="stat-card">
-                <h3 id="totalOrders">0</h3>
-                <p>Total Órdenes</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="totalRevenue">$0</h3>
-                <p>Ingresos Totales</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="averageOrder">$0</h3>
-                <p>Promedio por Orden</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="totalStores">0</h3>
-                <p>Tiendas Activas</p>
-            </div>
-        </div>
-
-        <div id="paymentBreakdown" class="section" style="display: none;">
-            <h2>💳 Métodos de Pago</h2>
-            <div class="payment-breakdown" id="paymentList"></div>
-        </div>
-
-        <div id="topProducts" class="section" style="display: none;">
-            <h2>🏆 Top 5 Productos</h2>
-            <div class="products-list" id="productsList"></div>
-        </div>
-
-        <div id="storeBreakdown" class="section" style="display: none;">
-            <h2>🏪 Desglose por Tienda</h2>
-            <div class="stores-list" id="storesList"></div>
         </div>
     </div>
 
     <script>
         let stores = [];
         let currentStats = null;
+        let chatHistory = [];
 
         // Cargar tiendas al iniciar
         async function loadStores() {
@@ -481,6 +636,73 @@
             document.getElementById('paymentBreakdown').style.display = 'block';
             document.getElementById('topProducts').style.display = 'block';
             document.getElementById('storeBreakdown').style.display = 'block';
+        }
+
+        // Chat Functions
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Agregar mensaje del usuario
+            addMessage(message, 'user');
+            input.value = '';
+
+            // Mostrar indicador de escritura
+            showTyping(true);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        context: currentStats ? {
+                            totalOrders: currentStats.totalOrders,
+                            totalRevenue: currentStats.totalRevenue,
+                            averageOrderValue: currentStats.averageOrderValue,
+                            storeBreakdown: currentStats.storeBreakdown,
+                            paymentBreakdown: currentStats.paymentBreakdown,
+                            topProducts: currentStats.topProducts
+                        } : null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    addMessage(result.response, 'assistant');
+                } else {
+                    addMessage('Lo siento, hubo un error procesando tu pregunta. Inténtalo de nuevo.', 'assistant');
+                }
+            } catch (error) {
+                addMessage('Error de conexión. Verifica que el servidor esté funcionando.', 'assistant');
+            } finally {
+                showTyping(false);
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping(show) {
+            document.getElementById('typingIndicator').style.display = show ? 'block' : 'none';
         }
 
         // Utilidades
