@@ -10,3 +10,4 @@ restartPolicyMaxRetries = 10
 
 [environments.production]
 NODE_ENV = "production"
+NPM_CONFIG_OMIT = "dev"
