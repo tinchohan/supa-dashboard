@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "npm run start:sqlite"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
@@ -10,3 +10,4 @@ restartPolicyMaxRetries = 10
 
 [environments.production]
 NODE_ENV = "production"
+NPM_CONFIG_OMIT = "dev"
