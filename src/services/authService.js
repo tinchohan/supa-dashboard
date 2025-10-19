@@ -2,8 +2,9 @@ import axios from 'axios';
 
 class AuthService {
   constructor() {
-    this.baseURL = process.env.LINISCO_API_URL || 'https://api.linisco.com.ar';
-    this.tokens = new Map(); // Almacenar tokens por tienda
+    this.baseURL = process.env.LINISCO_API_URL || 'https://pos.linisco.com.ar';
+    this.tokens = new Map(); // Almacenar tokens por usuario
+    this.userCredentials = new Map(); // Almacenar credenciales por usuario
   }
 
   // Autenticar con email y password
@@ -25,12 +26,12 @@ class AuthService {
         }
       });
 
-      if (response.data && response.data.user && response.data.user.authentication_token) {
+      if (response.data && response.data.authentication_token) {
         console.log(`✅ Autenticación exitosa para ${email}`);
         return {
           success: true,
-          token: response.data.user.authentication_token,
-          user: response.data.user
+          token: response.data.authentication_token,
+          user: response.data
         };
       } else {
         throw new Error('No se recibió token de autenticación');
@@ -56,37 +57,57 @@ class AuthService {
     }
   }
 
-  // Obtener token para una tienda
-  async getToken(storeId, email, password) {
-    const cacheKey = `${storeId}-${email}`;
+  // Obtener token para un usuario
+  async getToken(email, password) {
+    const cacheKey = email;
     
+    // Verificar si ya tenemos un token válido en cache
     if (this.tokens.has(cacheKey)) {
-      return this.tokens.get(cacheKey);
+      const cachedResult = this.tokens.get(cacheKey);
+      // Verificar si el token sigue siendo válido (opcional, por simplicidad asumimos que sí)
+      return cachedResult;
     }
 
-    // Si no se proporcionan credenciales, usar las de Railway
+    // Si no se proporcionan credenciales, usar las de Railway o demo
     if (!email || !password) {
-      const envEmail = process.env[`STORE_${storeId}_EMAIL`];
-      const envPassword = process.env[`STORE_${storeId}_PASSWORD`];
-      
-      if (envEmail && envPassword) {
-        email = envEmail;
-        password = envPassword;
-        console.log(`🔐 Usando credenciales de Railway para tienda ${storeId}`);
-      } else {
-        // Fallback a credenciales demo
-        email = 'demo@linisco.com.ar';
-        password = 'demo123';
-        console.log(`⚠️ Usando credenciales demo para tienda ${storeId}`);
-      }
+      // Intentar obtener credenciales del primer usuario configurado
+      email = process.env.LINISCO_EMAIL || '63953@linisco.com.ar';
+      password = process.env.LINISCO_PASSWORD || '63953hansen';
+      console.log(`🔐 Usando credenciales configuradas para ${email}`);
     }
 
     const result = await this.login(email, password);
     if (result.success) {
-      this.tokens.set(cacheKey, result.token);
+      // Almacenar credenciales y token
+      this.userCredentials.set(cacheKey, { email, password });
+      this.tokens.set(cacheKey, result);
     }
     
     return result;
+  }
+
+  // Agregar nuevo usuario al sistema
+  addUser(email, password) {
+    this.userCredentials.set(email, { email, password });
+    console.log(`👤 Usuario agregado: ${email}`);
+  }
+
+  // Obtener lista de usuarios configurados
+  getUsers() {
+    return Array.from(this.userCredentials.keys());
+  }
+
+  // Obtener token para un usuario específico
+  async getTokenForUser(email) {
+    const userCreds = this.userCredentials.get(email);
+    if (!userCreds) {
+      return {
+        success: false,
+        error: `Usuario ${email} no encontrado`
+      };
+    }
+
+    return await this.getToken(userCreds.email, userCreds.password);
   }
 
   // Verificar si un token es válido

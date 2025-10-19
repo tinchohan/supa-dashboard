@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import ApiService from './services/apiService.js';
+import SyncService from './services/syncService.js';
+import { getActiveUsers, getUserByEmail } from './config/users.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +23,16 @@ app.use(express.static('public'));
 
 // Servicios
 const apiService = new ApiService();
+const syncService = new SyncService();
+
+// Inicializar servicio de sincronización
+syncService.initialize().then(initialized => {
+  if (initialized) {
+    console.log('✅ Servicio de sincronización con MySQL inicializado');
+  } else {
+    console.log('⚠️ Servicio de sincronización no disponible, usando solo API');
+  }
+});
 
 // Endpoints
 
@@ -34,19 +46,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Obtener tiendas (usar datos fijos ya que no hay endpoint específico)
+// Obtener tiendas (usar configuración de usuarios)
 app.get('/api/stores', async (req, res) => {
   try {
-    // Retornar lista fija de tiendas ya que no hay endpoint específico
-    const stores = [
-      { store_id: "63953", store_name: "Subway Lacroze" },
-      { store_id: "66220", store_name: "Subway Corrientes" },
-      { store_id: "72267", store_name: "Subway Ortiz" },
-      { store_id: "30036", store_name: "Daniel Lacroze" },
-      { store_id: "30038", store_name: "Daniel Corrientes" },
-      { store_id: "10019", store_name: "Daniel Ortiz" },
-      { store_id: "10020", store_name: "Seitu Juramento" }
-    ];
+    const activeUsers = getActiveUsers();
+    const stores = activeUsers.map(user => ({
+      store_id: user.storeId,
+      store_name: user.storeName,
+      user_email: user.email,
+      active: user.active
+    }));
     
     res.json({ success: true, data: stores });
   } catch (error) {
@@ -55,14 +64,48 @@ app.get('/api/stores', async (req, res) => {
   }
 });
 
-// Obtener estadísticas
+// Obtener usuarios configurados
+app.get('/api/users', async (req, res) => {
+  try {
+    const activeUsers = getActiveUsers();
+    const users = activeUsers.map(user => ({
+      id: user.id,
+      email: user.email,
+      storeName: user.storeName,
+      storeId: user.storeId,
+      active: user.active
+    }));
+    
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('❌ Error obteniendo usuarios:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener estadísticas para un usuario específico
 app.post('/api/stats', async (req, res) => {
   try {
-    const { fromDate, toDate, storeId } = req.body;
+    const { fromDate, toDate, email, password, storeId } = req.body;
     
     console.log(`📊 Obteniendo estadísticas desde ${fromDate} hasta ${toDate}`);
     
-    const result = await apiService.getStats(fromDate, toDate, storeId);
+    let result;
+    if (email && password) {
+      // Usar credenciales específicas
+      result = await syncService.getStats(fromDate, toDate, email, password);
+    } else if (storeId) {
+      // Buscar usuario por storeId
+      const user = getActiveUsers().find(u => u.storeId === storeId);
+      if (user) {
+        result = await syncService.getStats(fromDate, toDate, user.email, user.password);
+      } else {
+        return res.status(404).json({ success: false, error: 'Usuario no encontrado para la tienda especificada' });
+      }
+    } else {
+      // Usar usuario por defecto
+      result = await syncService.getStats(fromDate, toDate);
+    }
     
     if (result.success) {
       res.json({ success: true, data: result.data });
@@ -71,6 +114,33 @@ app.post('/api/stats', async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener estadísticas consolidadas para todos los usuarios
+app.post('/api/stats/consolidated', async (req, res) => {
+  try {
+    const { fromDate, toDate, userIds } = req.body;
+    
+    console.log(`📊 Obteniendo estadísticas consolidadas desde ${fromDate} hasta ${toDate}`);
+    
+    let users = getActiveUsers();
+    
+    // Si se especifican userIds, filtrar usuarios
+    if (userIds && userIds.length > 0) {
+      users = users.filter(user => userIds.includes(user.id));
+    }
+    
+    const result = await apiService.getStatsForMultipleUsers(fromDate, toDate, users);
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas consolidadas:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -126,14 +196,202 @@ app.post('/api/sync', async (req, res) => {
   }
 });
 
+// Obtener órdenes de venta
+app.post('/api/sale-orders', async (req, res) => {
+  try {
+    const { fromDate, toDate, email, password, storeId } = req.body;
+    
+    let user;
+    if (email && password) {
+      user = { email, password };
+    } else if (storeId) {
+      const foundUser = getActiveUsers().find(u => u.storeId === storeId);
+      if (!foundUser) {
+        return res.status(404).json({ success: false, error: 'Usuario no encontrado para la tienda especificada' });
+      }
+      user = { email: foundUser.email, password: foundUser.password };
+    } else {
+      const defaultUser = getActiveUsers()[0];
+      user = { email: defaultUser.email, password: defaultUser.password };
+    }
+    
+    const result = await apiService.getSaleOrders(user.email, user.password, fromDate, toDate);
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo órdenes de venta:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener productos de venta
+app.post('/api/sale-products', async (req, res) => {
+  try {
+    const { fromDate, toDate, email, password, storeId } = req.body;
+    
+    let user;
+    if (email && password) {
+      user = { email, password };
+    } else if (storeId) {
+      const foundUser = getActiveUsers().find(u => u.storeId === storeId);
+      if (!foundUser) {
+        return res.status(404).json({ success: false, error: 'Usuario no encontrado para la tienda especificada' });
+      }
+      user = { email: foundUser.email, password: foundUser.password };
+    } else {
+      const defaultUser = getActiveUsers()[0];
+      user = { email: defaultUser.email, password: defaultUser.password };
+    }
+    
+    const result = await apiService.getSaleProducts(user.email, user.password, fromDate, toDate);
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo productos de venta:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener sesiones
+app.post('/api/sessions', async (req, res) => {
+  try {
+    const { fromDate, toDate, email, password, storeId } = req.body;
+    
+    let user;
+    if (email && password) {
+      user = { email, password };
+    } else if (storeId) {
+      const foundUser = getActiveUsers().find(u => u.storeId === storeId);
+      if (!foundUser) {
+        return res.status(404).json({ success: false, error: 'Usuario no encontrado para la tienda especificada' });
+      }
+      user = { email: foundUser.email, password: foundUser.password };
+    } else {
+      const defaultUser = getActiveUsers()[0];
+      user = { email: defaultUser.email, password: defaultUser.password };
+    }
+    
+    const result = await apiService.getSessions(user.email, user.password, fromDate, toDate);
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo sesiones:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Sincronizar datos de un usuario específico
+app.post('/api/sync/user', async (req, res) => {
+  try {
+    const { fromDate, toDate, email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email y password son requeridos' });
+    }
+    
+    console.log(`🔄 Sincronizando datos para ${email} desde ${fromDate} hasta ${toDate}`);
+    
+    const result = await syncService.syncUserData(email, password, fromDate, toDate);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: `Datos sincronizados: ${result.data.synced.orders} órdenes, ${result.data.synced.products} productos, ${result.data.synced.sessions} sesiones`,
+        data: result.data
+      });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error sincronizando usuario:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Sincronizar datos de todos los usuarios
+app.post('/api/sync/all', async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.body;
+    
+    console.log(`🔄 Sincronizando datos de todos los usuarios desde ${fromDate} hasta ${toDate}`);
+    
+    const result = await syncService.syncAllUsers(fromDate, toDate);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: `Sincronización completada: ${result.data.totalSynced} registros totales`,
+        data: result.data
+      });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error sincronizando todos los usuarios:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Obtener estado de sincronización
+app.get('/api/sync/status', async (req, res) => {
+  try {
+    const result = await syncService.getSyncStatus();
+    
+    if (result.success) {
+      res.json({ success: true, data: result.data });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo estado de sincronización:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Limpiar datos antiguos
+app.post('/api/sync/cleanup', async (req, res) => {
+  try {
+    const { daysToKeep = 90 } = req.body;
+    
+    console.log(`🧹 Limpiando datos antiguos (más de ${daysToKeep} días)`);
+    
+    const result = await syncService.cleanOldData(daysToKeep);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: `Limpieza completada: ${result.data.orders_deleted} órdenes, ${result.data.products_deleted} productos, ${result.data.sessions_deleted} sesiones eliminadas`,
+        data: result.data
+      });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error limpiando datos antiguos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Test de conectividad con API
 app.get('/api/test-api', async (req, res) => {
   try {
     const axios = (await import('axios')).default;
-    const response = await axios.get(process.env.LINISCO_API_URL || 'https://api.linisco.com.ar', {
+    const response = await axios.get(process.env.LINISCO_API_URL || 'https://pos.linisco.com.ar', {
       timeout: 5000,
       headers: {
-        'User-Agent': 'Linisco-Dashboard/1.0.0'
+        'User-Agent': 'vscode-restclient'
       }
     });
     
@@ -141,14 +399,14 @@ app.get('/api/test-api', async (req, res) => {
       success: true,
       message: 'API de Linisco accesible',
       status: response.status,
-      url: process.env.LINISCO_API_URL || 'https://api.linisco.com.ar'
+      url: process.env.LINISCO_API_URL || 'https://pos.linisco.com.ar'
     });
   } catch (error) {
     res.json({
       success: false,
       message: 'API de Linisco no accesible, usando modo demo',
       error: error.message,
-      url: process.env.LINISCO_API_URL || 'https://api.linisco.com.ar'
+      url: process.env.LINISCO_API_URL || 'https://pos.linisco.com.ar'
     });
   }
 });

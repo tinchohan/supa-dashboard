@@ -3,17 +3,17 @@ import AuthService from './authService.js';
 
 class ApiService {
   constructor() {
-    this.baseURL = process.env.LINISCO_API_URL || 'https://api.linisco.com.ar';
+    this.baseURL = process.env.LINISCO_API_URL || 'https://pos.linisco.com.ar';
     this.authService = new AuthService();
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
   }
 
   // Obtener datos con autenticación automática
-  async getData(endpoint, storeId, email, password, params = {}) {
+  async getData(endpoint, email, password, params = {}) {
     try {
-      // Obtener token (usará credenciales de Railway automáticamente)
-      const authResult = await this.authService.getToken(storeId, email, password);
+      // Obtener token
+      const authResult = await this.authService.getToken(email, password);
       if (!authResult.success) {
         console.log('⚠️ Error de autenticación, usando datos de muestra');
         return this.getMockData(endpoint, params);
@@ -28,10 +28,10 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-User-Email': email,
           'X-User-Token': token,
-          'User-Agent': 'Linisco-Dashboard/1.0.0'
+          'User-Agent': 'vscode-restclient'
         },
         data: params, // Los datos van en el body para esta API
-        timeout: 10000
+        timeout: 30000
       });
 
       return {
@@ -54,6 +54,33 @@ class ApiService {
         status: error.response?.status
       };
     }
+  }
+
+  // Obtener órdenes de venta
+  async getSaleOrders(email, password, fromDate, toDate) {
+    const params = {
+      fromDate: fromDate,
+      toDate: toDate
+    };
+    return await this.getData('/sale_orders', email, password, params);
+  }
+
+  // Obtener productos de venta
+  async getSaleProducts(email, password, fromDate, toDate) {
+    const params = {
+      fromDate: fromDate,
+      toDate: toDate
+    };
+    return await this.getData('/sale_products', email, password, params);
+  }
+
+  // Obtener sesiones
+  async getSessions(email, password, fromDate, toDate) {
+    const params = {
+      fromDate: fromDate,
+      toDate: toDate
+    };
+    return await this.getData('/psessions', email, password, params);
   }
 
   // Datos de muestra para cuando la API no esté disponible
@@ -250,18 +277,21 @@ class ApiService {
   }
 
   // Obtener estadísticas calculadas
-  async getStats(fromDate, toDate, storeId = null) {
+  async getStats(fromDate, toDate, email = null, password = null) {
     try {
       console.log(`📊 Obteniendo estadísticas reales desde ${fromDate} hasta ${toDate}`);
       
+      // Usar credenciales por defecto si no se proporcionan
+      if (!email || !password) {
+        email = process.env.LINISCO_EMAIL || '63953@linisco.com.ar';
+        password = process.env.LINISCO_PASSWORD || '63953hansen';
+      }
+      
       // Intentar obtener datos reales de la API
-      const ordersResult = await this.getData('/sale_orders', storeId || '63953', null, null, {
-        fromDate: fromDate,
-        toDate: toDate
-      });
+      const ordersResult = await this.getSaleOrders(email, password, fromDate, toDate);
 
       let orders = [];
-      if (ordersResult.success && ordersResult.data.length > 0) {
+      if (ordersResult.success && ordersResult.data && ordersResult.data.length > 0) {
         console.log(`✅ Obtenidas ${ordersResult.data.length} órdenes reales`);
         orders = ordersResult.data;
       } else {
@@ -297,6 +327,65 @@ class ApiService {
 
     } catch (error) {
       console.error('❌ Error calculando estadísticas:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Obtener estadísticas para múltiples usuarios
+  async getStatsForMultipleUsers(fromDate, toDate, users = []) {
+    try {
+      console.log(`📊 Obteniendo estadísticas para ${users.length} usuarios desde ${fromDate} hasta ${toDate}`);
+      
+      const allOrders = [];
+      const userStats = [];
+
+      for (const user of users) {
+        try {
+          const userStatsResult = await this.getStats(fromDate, toDate, user.email, user.password);
+          if (userStatsResult.success) {
+            userStats.push({
+              user: user.email,
+              ...userStatsResult.data
+            });
+            
+            // Agregar órdenes del usuario a la lista total
+            const userOrdersResult = await this.getSaleOrders(user.email, user.password, fromDate, toDate);
+            if (userOrdersResult.success && userOrdersResult.data) {
+              allOrders.push(...userOrdersResult.data);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error obteniendo datos para ${user.email}:`, error.message);
+        }
+      }
+
+      // Calcular estadísticas consolidadas
+      const totalOrders = allOrders.length;
+      const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total - (order.discount || 0)), 0);
+      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+      return {
+        success: true,
+        data: {
+          totalOrders,
+          totalRevenue,
+          averageOrderValue,
+          userStats,
+          consolidated: {
+            totalOrders,
+            totalRevenue,
+            averageOrderValue,
+            paymentBreakdown: this.calculatePaymentBreakdown(allOrders),
+            storeBreakdown: this.calculateStoreBreakdown(allOrders)
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error calculando estadísticas consolidadas:', error);
       return {
         success: false,
         error: error.message

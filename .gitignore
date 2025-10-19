@@ -11,12 +11,6 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Database files (local development)
-data/linisco.db
-data/linisco.db-journal
-*.db
-*.db-journal
-
 # Logs
 logs
 *.log
@@ -34,13 +28,14 @@ coverage/
 .nyc_output
 
 # Dependency directories
+node_modules/
 jspm_packages/
 
 # Optional npm cache directory
 .npm
 
-# Optional eslint cache
-.eslintcache
+# Optional REPL history
+.node_repl_history
 
 # Output of 'npm pack'
 *.tgz
@@ -76,6 +71,10 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
+# Test files (keep some for reference)
+test-*.js
+demo-*.js
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -84,16 +83,3 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Railway specific
-.railway/
-
-# Credenciales de autenticación - NO SUBIR A GITHUB
-config/auth-credentials.js
