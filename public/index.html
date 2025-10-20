@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏪 Linisco Dashboard</title>
+    <title>🏪 Linisco Dashboard v2.0</title>
     <style>
         * {
             margin: 0;
@@ -26,17 +26,18 @@
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
             color: white;
+            margin-bottom: 30px;
         }
 
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .header p {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             opacity: 0.9;
         }
 
@@ -47,25 +48,16 @@
         }
 
         .dashboard {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-panel {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            height: fit-content;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
 
         .controls {
-            background: white;
-            padding: 20px;
+            background: #f8f9fa;
+            padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             margin-bottom: 30px;
         }
 
@@ -80,19 +72,21 @@
         .control-group label {
             font-weight: 600;
             color: #555;
+            min-width: 80px;
         }
 
         .control-group input, .control-group select {
-            padding: 10px;
+            padding: 12px;
             border: 2px solid #e1e5e9;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
         }
 
         .control-group input:focus, .control-group select:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .store-checkboxes {
@@ -106,14 +100,16 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px;
-            background: #f8f9fa;
+            padding: 10px;
+            background: white;
             border-radius: 8px;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            border: 2px solid transparent;
         }
 
         .store-option:hover {
-            background: #e9ecef;
+            background: #f0f0f0;
+            border-color: #667eea;
         }
 
         .store-option input[type="checkbox"] {
@@ -126,13 +122,14 @@
             cursor: pointer;
             font-size: 14px;
             color: #555;
+            flex: 1;
         }
 
         .store-status {
             font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
         }
 
         .store-status.active {
@@ -150,116 +147,65 @@
             color: #856404;
         }
 
-        .insights-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .insight-card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .insight-card h4 {
-            margin: 0 0 15px 0;
-            color: #333;
-            font-size: 1.1rem;
-        }
-
-        .insight-content {
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .insight-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .insight-item:last-child {
-            border-bottom: none;
-        }
-
-        .insight-label {
-            font-weight: 500;
-            color: #555;
-        }
-
-        .insight-value {
-            font-weight: 600;
-            color: #667eea;
-        }
-
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
-            transition: transform 0.2s;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
 
         .stat-card {
-            background: white;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
-            transition: transform 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .stat-card h3 {
-            color: #667eea;
             font-size: 2rem;
+            color: #667eea;
             margin-bottom: 10px;
         }
 
         .stat-card p {
             color: #666;
-            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .section {
-            background: white;
+            background: #f8f9fa;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .section h2 {
@@ -268,85 +214,46 @@
             font-size: 1.5rem;
         }
 
-        .payment-breakdown {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .payment-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            border-left: 4px solid #667eea;
-        }
-
-        .payment-item h4 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .payment-item .amount {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .products-list {
+        .products-list, .stores-list {
             display: grid;
             gap: 15px;
         }
 
-        .product-item {
-            background: #f8f9fa;
+        .product-item, .store-item {
+            background: white;
             padding: 15px;
             border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .product-item .name {
+        .product-item .name, .store-item .name {
             font-weight: 600;
             color: #333;
         }
 
-        .product-item .revenue {
+        .product-item .revenue, .store-item .stats {
             color: #667eea;
             font-weight: bold;
         }
 
-        .stores-list {
-            display: grid;
-            gap: 15px;
-        }
-
-        .store-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
+        .chat-panel {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            height: fit-content;
+            max-height: 80vh;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
         }
 
-        .store-item .name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .store-item .stats {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        /* Chat Styles */
         .chat-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
-            border-radius: 15px 15px 0 0;
+            border-radius: 20px 20px 0 0;
             text-align: center;
         }
 
@@ -402,7 +309,7 @@
             flex: 1;
             padding: 12px;
             border: 2px solid #e1e5e9;
-            border-radius: 8px;
+            border-radius: 25px;
             font-size: 14px;
         }
 
@@ -411,69 +318,39 @@
             border-color: #667eea;
         }
 
-        .chat-input button {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: #667eea;
+        }
+
+        .error, .success {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
         }
 
         .error {
-            background: #fee;
-            color: #c33;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #c33;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         .success {
-            background: #efe;
-            color: #363;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #363;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
 
-        .typing-indicator {
-            display: none;
-            padding: 12px;
-            background: #f5f5f5;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            font-style: italic;
-            color: #666;
-        }
-
-        @media (max-width: 1024px) {
+        @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
             
             .chat-panel {
                 order: -1;
-                max-height: 400px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .control-group {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .control-group input, .control-group select {
-                width: 100%;
+                margin-bottom: 30px;
             }
         }
     </style>
@@ -490,27 +367,26 @@
                 <div class="controls">
                     <div class="control-group">
                         <label for="fromDate">Desde:</label>
-                        <input type="date" id="fromDate" value="2025-10-17">
+                        <input type="date" id="fromDate" value="2025-10-20">
                         
                         <label for="toDate">Hasta:</label>
-                        <input type="date" id="toDate" value="2025-10-17">
+                        <input type="date" id="toDate" value="2025-10-20">
                     </div>
                     
                     <div class="control-group">
                         <label>Tiendas:</label>
                         <div class="store-checkboxes" id="storeCheckboxes">
                             <div class="store-option">
-                                <input type="checkbox" id="allStores" checked>
+                                <input type="checkbox" id="allStores" checked onchange="toggleAllStores()">
                                 <label for="allStores">Todas las tiendas</label>
                             </div>
-                            <!-- Las tiendas se cargarán dinámicamente -->
                         </div>
                     </div>
                     
                     <div class="control-group">
                         <button class="btn" onclick="loadData()">📊 Cargar Datos</button>
-                        <button class="btn btn-secondary" onclick="syncSelectedStores()">🔄 Sincronizar Seleccionadas</button>
-                        <button class="btn btn-warning" onclick="authenticateStores()">🔐 Autenticar Tiendas</button>
+                        <button class="btn btn-secondary" onclick="syncData()">🔄 Sincronizar</button>
+                        <button class="btn btn-warning" onclick="authenticateStores()">🔐 Autenticar</button>
                     </div>
                 </div>
 
@@ -540,9 +416,9 @@
                     </div>
                 </div>
 
-                <div id="paymentBreakdown" class="section" style="display: none;">
+                <div id="paymentMethods" class="section" style="display: none;">
                     <h2>💳 Métodos de Pago</h2>
-                    <div class="payment-breakdown" id="paymentList"></div>
+                    <div class="products-list" id="paymentList"></div>
                 </div>
 
                 <div id="topProducts" class="section" style="display: none;">
@@ -554,32 +430,6 @@
                     <h2>🏪 Desglose por Tienda</h2>
                     <div class="stores-list" id="storesList"></div>
                 </div>
-
-                <div id="insights" class="section" style="display: none;">
-                    <h2>📈 Insights Adicionales</h2>
-                    
-                    <div class="insights-grid">
-                        <div class="insight-card">
-                            <h4>🕐 Horarios de Mayor Venta</h4>
-                            <div id="hourlyStats" class="insight-content"></div>
-                        </div>
-                        
-                        <div class="insight-card">
-                            <h4>📅 Días Más Rentables</h4>
-                            <div id="dailyStats" class="insight-content"></div>
-                        </div>
-                        
-                        <div class="insight-card">
-                            <h4>🏆 Productos por Tienda</h4>
-                            <div id="topProductsByStore" class="insight-content"></div>
-                        </div>
-                        
-                        <div class="insight-card">
-                            <h4>📊 Rendimiento por Tienda</h4>
-                            <div id="storePerformance" class="insight-content"></div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="chat-panel">
@@ -589,19 +439,15 @@
                 </div>
                 
                 <div class="chat-messages" id="chatMessages">
-                    <div class="message system">
-                        ¡Hola! Soy tu asistente de análisis de ventas. Puedo ayudarte a interpretar los datos, identificar tendencias y responder preguntas sobre tu negocio.
+                    <div class="message assistant">
+                        ¡Hola! 👋 Soy tu asistente de análisis de ventas. Puedo ayudarte a entender mejor tus datos de ventas, identificar tendencias y responder preguntas sobre el rendimiento de tus tiendas. ¿En qué puedo ayudarte?
                     </div>
-                </div>
-                
-                <div class="typing-indicator" id="typingIndicator">
-                    El asistente está escribiendo...
                 </div>
                 
                 <div class="chat-input">
                     <div class="chat-input-group">
                         <input type="text" id="chatInput" placeholder="Pregunta sobre tus ventas..." onkeypress="handleChatKeyPress(event)">
-                        <button onclick="sendMessage()">Enviar</button>
+                        <button class="btn" onclick="sendMessage()">Enviar</button>
                     </div>
                 </div>
             </div>
@@ -609,41 +455,15 @@
     </div>
 
     <script>
-        let stores = [];
-        let currentStats = null;
-        let chatHistory = [];
-
-        // Cargar tiendas al iniciar
-        async function loadStores() {
-            try {
-                const response = await fetch('/api/stores');
-                const result = await response.json();
-                
-                if (result.success) {
-                    stores = result.data;
-                    const storeSelect = document.getElementById('storeSelect');
-                    storeSelect.innerHTML = '<option value="">Todas las tiendas</option>';
-                    
-                    stores.forEach(store => {
-                        const option = document.createElement('option');
-                        option.value = store.store_id;
-                        option.textContent = store.store_name;
-                        storeSelect.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error cargando tiendas:', error);
-            }
-        }
-
         // Variables globales
         let availableStores = [];
         let selectedStores = [];
+        let currentStats = null;
 
         // Cargar tiendas disponibles al cargar la página
         async function loadAvailableStores() {
             try {
-                const response = await fetch('/api/stores/available');
+                const response = await fetch('/api/stores');
                 const result = await response.json();
                 
                 if (result.success) {
@@ -733,7 +553,7 @@
             hideMessages();
 
             try {
-                const response = await fetch('/api/stats/enhanced', {
+                const response = await fetch('/api/stats', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -750,20 +570,20 @@
                 if (result.success) {
                     currentStats = result.data;
                     displayStats(result.data);
-                    displayInsights(result.data);
                     showSuccess(`Datos cargados: ${result.data.totalOrders} órdenes, $${result.data.totalRevenue.toLocaleString()} ingresos`);
                 } else {
                     showError('Error cargando datos: ' + result.error);
                 }
             } catch (error) {
+                console.error('Error:', error);
                 showError('Error de conexión: ' + error.message);
             } finally {
                 showLoading(false);
             }
         }
 
-        // Sincronizar tiendas seleccionadas
-        async function syncSelectedStores() {
+        // Sincronizar datos
+        async function syncData() {
             const fromDate = document.getElementById('fromDate').value;
             const toDate = document.getElementById('toDate').value;
             
@@ -781,7 +601,7 @@
             hideMessages();
 
             try {
-                const response = await fetch('/api/sync/selected', {
+                const response = await fetch('/api/sync', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -811,7 +631,7 @@
             }
         }
 
-        // Autenticar todas las tiendas
+        // Autenticar tiendas
         async function authenticateStores() {
             showLoading(true);
             hideMessages();
@@ -842,75 +662,6 @@
             }
         }
 
-        // Mostrar insights adicionales
-        function displayInsights(data) {
-            // Mostrar horarios de mayor venta
-            if (data.hourlyStats) {
-                const hourlyContainer = document.getElementById('hourlyStats');
-                hourlyContainer.innerHTML = data.hourlyStats.map(hour => `
-                    <div class="insight-item">
-                        <span class="insight-label">${hour.hour}:00</span>
-                        <span class="insight-value">${hour.orderCount} órdenes</span>
-                    </div>
-                `).join('');
-            }
-
-            // Mostrar días más rentables
-            if (data.dailyStats) {
-                const dailyContainer = document.getElementById('dailyStats');
-                dailyContainer.innerHTML = data.dailyStats.map(day => `
-                    <div class="insight-item">
-                        <span class="insight-label">${day.dayName}</span>
-                        <span class="insight-value">$${day.totalAmount.toLocaleString()}</span>
-                    </div>
-                `).join('');
-            }
-
-            // Mostrar productos por tienda
-            if (data.topProductsByStore) {
-                const productsContainer = document.getElementById('topProductsByStore');
-                const groupedProducts = data.topProductsByStore.reduce((acc, product) => {
-                    if (!acc[product.storeId]) acc[product.storeId] = [];
-                    acc[product.storeId].push(product);
-                    return acc;
-                }, {});
-
-                productsContainer.innerHTML = Object.entries(groupedProducts).map(([storeId, products]) => {
-                    const store = availableStores.find(s => s.storeId === storeId);
-                    const storeName = store ? store.storeName : `Tienda ${storeId}`;
-                    return `
-                        <div style="margin-bottom: 15px;">
-                            <strong>${storeName}:</strong>
-                            ${products.slice(0, 3).map(p => `
-                                <div class="insight-item">
-                                    <span class="insight-label">${p.productName}</span>
-                                    <span class="insight-value">$${p.totalRevenue.toLocaleString()}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Mostrar rendimiento por tienda
-            if (data.storePerformance) {
-                const performanceContainer = document.getElementById('storePerformance');
-                performanceContainer.innerHTML = data.storePerformance.map(store => {
-                    const storeInfo = availableStores.find(s => s.storeId === store.storeId);
-                    const storeName = storeInfo ? storeInfo.storeName : `Tienda ${store.storeId}`;
-                    return `
-                        <div class="insight-item">
-                            <span class="insight-label">${storeName}</span>
-                            <span class="insight-value">$${store.totalRevenue.toLocaleString()}</span>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Mostrar sección de insights
-            document.getElementById('insights').style.display = 'block';
-        }
-
         // Mostrar estadísticas
         function displayStats(stats) {
             // Estadísticas generales
@@ -921,57 +672,45 @@
 
             // Métodos de pago
             const paymentList = document.getElementById('paymentList');
-            paymentList.innerHTML = '';
-            
-            stats.paymentBreakdown.forEach(payment => {
-                const div = document.createElement('div');
-                div.className = 'payment-item';
-                div.innerHTML = `
-                    <h4>${payment.payment_category}</h4>
-                    <div class="amount">$${payment.total_amount.toLocaleString()}</div>
-                    <div>${payment.order_count} órdenes</div>
-                `;
-                paymentList.appendChild(div);
-            });
+            paymentList.innerHTML = stats.paymentBreakdown.map(payment => `
+                <div class="product-item">
+                    <span class="name">${payment.payment_category}</span>
+                    <span class="revenue">$${payment.total_amount.toLocaleString()}</span>
+                </div>
+            `).join('');
 
             // Top productos
             const productsList = document.getElementById('productsList');
-            productsList.innerHTML = '';
-            
-            stats.topProducts.forEach((product, index) => {
-                const div = document.createElement('div');
-                div.className = 'product-item';
-                div.innerHTML = `
-                    <div class="name">${index + 1}. ${product.name}</div>
-                    <div class="revenue">$${product.total_revenue.toLocaleString()}</div>
-                `;
-                productsList.appendChild(div);
-            });
+            productsList.innerHTML = stats.topProducts.map(product => `
+                <div class="product-item">
+                    <span class="name">${product.name}</span>
+                    <span class="revenue">$${product.total_revenue.toLocaleString()}</span>
+                </div>
+            `).join('');
 
             // Desglose por tienda
             const storesList = document.getElementById('storesList');
-            storesList.innerHTML = '';
-            
-            stats.storeBreakdown.forEach(store => {
-                const div = document.createElement('div');
-                div.className = 'store-item';
-                div.innerHTML = `
-                    <div class="name">${store.store_id}</div>
-                    <div class="stats">
-                        ${store.order_count} órdenes - $${store.total_amount.toLocaleString()}
-                    </div>
-                `;
-                storesList.appendChild(div);
-            });
+            storesList.innerHTML = stats.storeBreakdown.map(store => `
+                <div class="store-item">
+                    <span class="name">${getStoreName(store.store_id)}</span>
+                    <span class="stats">${store.order_count} órdenes - $${store.total_amount.toLocaleString()}</span>
+                </div>
+            `).join('');
 
             // Mostrar secciones
             document.getElementById('stats').style.display = 'grid';
-            document.getElementById('paymentBreakdown').style.display = 'block';
+            document.getElementById('paymentMethods').style.display = 'block';
             document.getElementById('topProducts').style.display = 'block';
             document.getElementById('storeBreakdown').style.display = 'block';
         }
 
-        // Chat Functions
+        // Obtener nombre de tienda
+        function getStoreName(storeId) {
+            const store = availableStores.find(s => s.storeId === storeId);
+            return store ? store.storeName : `Tienda ${storeId}`;
+        }
+
+        // Chat
         function handleChatKeyPress(event) {
             if (event.key === 'Enter') {
                 sendMessage();
@@ -989,7 +728,7 @@
             input.value = '';
 
             // Mostrar indicador de escritura
-            showTyping(true);
+            const typingId = addTypingIndicator();
 
             try {
                 const response = await fetch('/api/chat', {
@@ -999,43 +738,51 @@
                     },
                     body: JSON.stringify({
                         message: message,
-                        context: currentStats ? {
-                            totalOrders: currentStats.totalOrders,
-                            totalRevenue: currentStats.totalRevenue,
-                            averageOrderValue: currentStats.averageOrderValue,
-                            storeBreakdown: currentStats.storeBreakdown,
-                            paymentBreakdown: currentStats.paymentBreakdown,
-                            topProducts: currentStats.topProducts
-                        } : null
+                        context: currentStats
                     })
                 });
 
                 const result = await response.json();
 
+                // Remover indicador de escritura
+                removeTypingIndicator(typingId);
+
                 if (result.success) {
                     addMessage(result.response, 'assistant');
                 } else {
-                    addMessage('Lo siento, hubo un error procesando tu pregunta. Inténtalo de nuevo.', 'assistant');
+                    addMessage('Lo siento, hubo un error procesando tu consulta. ' + result.error, 'assistant');
                 }
             } catch (error) {
-                addMessage('Error de conexión. Verifica que el servidor esté funcionando.', 'assistant');
-            } finally {
-                showTyping(false);
+                removeTypingIndicator(typingId);
+                addMessage('Error de conexión. Por favor intenta de nuevo.', 'assistant');
             }
         }
 
-        function addMessage(text, sender) {
+        function addMessage(text, type) {
             const messagesContainer = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
+            messageDiv.className = `message ${type}`;
             messageDiv.textContent = text;
-            
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        function showTyping(show) {
-            document.getElementById('typingIndicator').style.display = show ? 'block' : 'none';
+        function addTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = '🤖 Escribiendo...';
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            return 'typing-indicator';
+        }
+
+        function removeTypingIndicator(id) {
+            const typingDiv = document.getElementById(id);
+            if (typingDiv) {
+                typingDiv.remove();
+            }
         }
 
         // Utilidades
@@ -1047,12 +794,18 @@
             const errorDiv = document.getElementById('error');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
         }
 
         function showSuccess(message) {
             const successDiv = document.getElementById('success');
             successDiv.textContent = message;
             successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
         }
 
         function hideMessages() {
