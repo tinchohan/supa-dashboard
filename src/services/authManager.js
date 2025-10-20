@@ -7,6 +7,26 @@ class AuthManager {
     this.authService = new AuthService();
     this.dbService = new SqliteService();
     this.authenticatedStores = new Map();
+    this.isInitialized = false;
+  }
+
+  // Inicializar el AuthManager
+  async initialize() {
+    if (this.isInitialized) return true;
+    
+    try {
+      const connected = await this.dbService.connect();
+      if (connected) {
+        await this.dbService.createTables();
+        this.isInitialized = true;
+        console.log('✅ AuthManager inicializado');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Error inicializando AuthManager:', error.message);
+      return false;
+    }
   }
 
   // Autenticar todas las tiendas

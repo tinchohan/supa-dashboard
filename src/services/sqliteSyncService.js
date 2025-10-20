@@ -26,6 +26,9 @@ class SqliteSyncService {
       // Crear tablas
       await this.dbService.createTables();
 
+      // Inicializar AuthManager
+      await this.authManager.initialize();
+
       // Sincronizar usuarios
       const users = getActiveUsers();
       for (const user of users) {
