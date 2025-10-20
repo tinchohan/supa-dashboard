@@ -28,9 +28,18 @@ const syncService = new SqliteSyncService();
 const aiService = new AiService();
 
 // Inicializar servicio de sincronización con SQLite
-syncService.initialize().then(initialized => {
+syncService.initialize().then(async initialized => {
   if (initialized) {
     console.log('✅ Servicio de sincronización con SQLite inicializado');
+    
+    // Autenticar todas las tiendas al iniciar
+    console.log('🔐 Autenticando todas las tiendas...');
+    const authResult = await syncService.authenticateAllStores();
+    if (authResult.success) {
+      console.log(`✅ ${authResult.summary.successful}/${authResult.summary.total} tiendas autenticadas`);
+    } else {
+      console.log('⚠️ Error en autenticación inicial de tiendas');
+    }
   } else {
     console.log('⚠️ Servicio de sincronización no disponible, usando solo API');
   }
@@ -522,6 +531,125 @@ app.get('/api/test-ai', async (req, res) => {
       success: false,
       message: 'Error probando IA: ' + error.message,
       configured: aiService.isConfigured()
+    });
+  }
+});
+
+// Gestión de autenticación de tiendas
+app.get('/api/auth/status', async (req, res) => {
+  try {
+    const result = await syncService.getAuthenticationStatus();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo estado de autenticación:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+app.post('/api/auth/authenticate-all', async (req, res) => {
+  try {
+    console.log('🔐 Autenticando todas las tiendas...');
+    const result = await syncService.authenticateAllStores();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error autenticando tiendas:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Sincronización selectiva
+app.post('/api/sync/selected', async (req, res) => {
+  try {
+    const { storeIds, fromDate, toDate } = req.body;
+    
+    if (!storeIds || !Array.isArray(storeIds) || storeIds.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'storeIds es requerido y debe ser un array no vacío' 
+      });
+    }
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'fromDate y toDate son requeridos' 
+      });
+    }
+
+    console.log(`🔄 Sincronizando tiendas seleccionadas: ${storeIds.join(', ')}`);
+    const result = await syncService.syncSelectedStores(storeIds, fromDate, toDate);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error sincronizando tiendas seleccionadas:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Estadísticas mejoradas
+app.post('/api/stats/enhanced', async (req, res) => {
+  try {
+    const { fromDate, toDate, storeIds } = req.body;
+    
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'fromDate y toDate son requeridos' 
+      });
+    }
+
+    console.log('📊 Obteniendo estadísticas mejoradas...');
+    const result = await syncService.getEnhancedStats(fromDate, toDate, storeIds);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas mejoradas:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Obtener lista de tiendas disponibles
+app.get('/api/stores/available', async (req, res) => {
+  try {
+    const authStatus = await syncService.getAuthenticationStatus();
+    
+    if (authStatus.success) {
+      const stores = authStatus.status.map(store => ({
+        storeId: store.storeId,
+        storeName: store.storeName,
+        email: store.email,
+        status: store.status,
+        isExpired: store.isExpired,
+        isExpiringSoon: store.isExpiringSoon,
+        needsRenewal: store.needsRenewal,
+        lastAuth: store.lastAuth
+      }));
+      
+      res.json({
+        success: true,
+        stores
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: authStatus.error
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo tiendas disponibles:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
     });
   }
 });

@@ -120,10 +120,27 @@ class SqliteService {
         )
       `);
 
+      // Tabla de tokens de autenticación
+      await this.db.exec(`
+        CREATE TABLE IF NOT EXISTS auth_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          store_id TEXT UNIQUE,
+          email TEXT,
+          token TEXT,
+          token_expires DATETIME,
+          last_auth DATETIME,
+          auth_status TEXT DEFAULT 'pending',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // Crear índices
       await this.db.exec(`
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
         CREATE INDEX IF NOT EXISTS idx_users_store_id ON users(store_id);
+        CREATE INDEX IF NOT EXISTS idx_auth_tokens_store_id ON auth_tokens(store_id);
+        CREATE INDEX IF NOT EXISTS idx_auth_tokens_email ON auth_tokens(email);
       `);
 
       console.log('✅ Tablas SQLite creadas/verificadas correctamente');
@@ -430,6 +447,109 @@ class SqliteService {
       };
     } catch (error) {
       console.error('❌ Error limpiando datos antiguos:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Gestión de tokens de autenticación
+  async saveAuthToken(storeId, email, token, expiresAt) {
+    try {
+      await this.db.run(`
+        INSERT OR REPLACE INTO auth_tokens 
+        (store_id, email, token, token_expires, last_auth, auth_status, updated_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'active', CURRENT_TIMESTAMP)
+      `, [storeId, email, token, expiresAt]);
+
+      console.log(`✅ Token guardado para tienda ${storeId}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Error guardando token para ${storeId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getAuthToken(storeId) {
+    try {
+      const result = await this.db.get(`
+        SELECT * FROM auth_tokens 
+        WHERE store_id = ? AND auth_status = 'active'
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `, [storeId]);
+
+      if (result && result.token_expires) {
+        const expiresAt = new Date(result.token_expires);
+        const now = new Date();
+        
+        if (expiresAt > now) {
+          return { success: true, token: result };
+        } else {
+          // Token expirado
+          await this.updateAuthStatus(storeId, 'expired');
+          return { success: false, error: 'Token expirado' };
+        }
+      }
+
+      return { success: false, error: 'No hay token válido' };
+    } catch (error) {
+      console.error(`❌ Error obteniendo token para ${storeId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async updateAuthStatus(storeId, status) {
+    try {
+      await this.db.run(`
+        UPDATE auth_tokens 
+        SET auth_status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE store_id = ?
+      `, [status, storeId]);
+
+      console.log(`✅ Estado de autenticación actualizado para ${storeId}: ${status}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Error actualizando estado para ${storeId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getAllAuthTokens() {
+    try {
+      const tokens = await this.db.all(`
+        SELECT 
+          at.*,
+          u.store_name,
+          u.active
+        FROM auth_tokens at
+        LEFT JOIN users u ON at.store_id = u.store_id
+        ORDER BY at.updated_at DESC
+      `);
+
+      return { success: true, tokens };
+    } catch (error) {
+      console.error('❌ Error obteniendo tokens:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getValidTokens() {
+    try {
+      const tokens = await this.db.all(`
+        SELECT 
+          at.*,
+          u.store_name,
+          u.active
+        FROM auth_tokens at
+        LEFT JOIN users u ON at.store_id = u.store_id
+        WHERE at.auth_status = 'active' 
+        AND at.token_expires > CURRENT_TIMESTAMP
+        AND u.active = 1
+        ORDER BY at.updated_at DESC
+      `);
+
+      return { success: true, tokens };
+    } catch (error) {
+      console.error('❌ Error obteniendo tokens válidos:', error.message);
       return { success: false, error: error.message };
     }
   }

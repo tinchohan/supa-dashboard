@@ -95,6 +95,108 @@
             border-color: #667eea;
         }
 
+        .store-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .store-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .store-option:hover {
+            background: #e9ecef;
+        }
+
+        .store-option input[type="checkbox"] {
+            margin: 0;
+            transform: scale(1.2);
+        }
+
+        .store-option label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .store-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        .store-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .store-status.expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .store-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .insight-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .insight-card h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .insight-content {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .insight-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+
+        .insight-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .insight-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -392,14 +494,23 @@
                         
                         <label for="toDate">Hasta:</label>
                         <input type="date" id="toDate" value="2025-10-17">
-                        
-                        <label for="storeSelect">Tienda:</label>
-                        <select id="storeSelect">
-                            <option value="">Todas las tiendas</option>
-                        </select>
-                        
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Tiendas:</label>
+                        <div class="store-checkboxes" id="storeCheckboxes">
+                            <div class="store-option">
+                                <input type="checkbox" id="allStores" checked>
+                                <label for="allStores">Todas las tiendas</label>
+                            </div>
+                            <!-- Las tiendas se cargarán dinámicamente -->
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
                         <button class="btn" onclick="loadData()">📊 Cargar Datos</button>
-                        <button class="btn btn-secondary" onclick="syncData()">🔄 Sincronizar</button>
+                        <button class="btn btn-secondary" onclick="syncSelectedStores()">🔄 Sincronizar Seleccionadas</button>
+                        <button class="btn btn-warning" onclick="authenticateStores()">🔐 Autenticar Tiendas</button>
                     </div>
                 </div>
 
@@ -442,6 +553,32 @@
                 <div id="storeBreakdown" class="section" style="display: none;">
                     <h2>🏪 Desglose por Tienda</h2>
                     <div class="stores-list" id="storesList"></div>
+                </div>
+
+                <div id="insights" class="section" style="display: none;">
+                    <h2>📈 Insights Adicionales</h2>
+                    
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <h4>🕐 Horarios de Mayor Venta</h4>
+                            <div id="hourlyStats" class="insight-content"></div>
+                        </div>
+                        
+                        <div class="insight-card">
+                            <h4>📅 Días Más Rentables</h4>
+                            <div id="dailyStats" class="insight-content"></div>
+                        </div>
+                        
+                        <div class="insight-card">
+                            <h4>🏆 Productos por Tienda</h4>
+                            <div id="topProductsByStore" class="insight-content"></div>
+                        </div>
+                        
+                        <div class="insight-card">
+                            <h4>📊 Rendimiento por Tienda</h4>
+                            <div id="storePerformance" class="insight-content"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -499,11 +636,93 @@
             }
         }
 
+        // Variables globales
+        let availableStores = [];
+        let selectedStores = [];
+
+        // Cargar tiendas disponibles al cargar la página
+        async function loadAvailableStores() {
+            try {
+                const response = await fetch('/api/stores/available');
+                const result = await response.json();
+                
+                if (result.success) {
+                    availableStores = result.stores;
+                    renderStoreCheckboxes();
+                } else {
+                    console.error('Error cargando tiendas:', result.error);
+                }
+            } catch (error) {
+                console.error('Error cargando tiendas:', error);
+            }
+        }
+
+        // Renderizar checkboxes de tiendas
+        function renderStoreCheckboxes() {
+            const container = document.getElementById('storeCheckboxes');
+            container.innerHTML = `
+                <div class="store-option">
+                    <input type="checkbox" id="allStores" checked onchange="toggleAllStores()">
+                    <label for="allStores">Todas las tiendas</label>
+                </div>
+            `;
+
+            availableStores.forEach(store => {
+                const storeOption = document.createElement('div');
+                storeOption.className = 'store-option';
+                storeOption.innerHTML = `
+                    <input type="checkbox" id="store_${store.storeId}" value="${store.storeId}" onchange="updateSelectedStores()">
+                    <label for="store_${store.storeId}">${store.storeName}</label>
+                    <span class="store-status ${store.status}">${getStatusText(store)}</span>
+                `;
+                container.appendChild(storeOption);
+            });
+
+            // Seleccionar todas por defecto
+            selectedStores = availableStores.map(store => store.storeId);
+        }
+
+        // Obtener texto de estado
+        function getStatusText(store) {
+            if (store.isExpired) return 'Expirado';
+            if (store.isExpiringSoon) return 'Expirando';
+            if (store.status === 'active') return 'Activo';
+            if (store.status === 'pending') return 'Pendiente';
+            return 'Error';
+        }
+
+        // Alternar todas las tiendas
+        function toggleAllStores() {
+            const allStoresCheckbox = document.getElementById('allStores');
+            const storeCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="store_"]');
+            
+            storeCheckboxes.forEach(checkbox => {
+                checkbox.checked = allStoresCheckbox.checked;
+            });
+            
+            updateSelectedStores();
+        }
+
+        // Actualizar tiendas seleccionadas
+        function updateSelectedStores() {
+            const allStoresCheckbox = document.getElementById('allStores');
+            const storeCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="store_"]');
+            
+            const selected = Array.from(storeCheckboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+            
+            selectedStores = selected;
+            
+            // Actualizar checkbox "Todas las tiendas"
+            allStoresCheckbox.checked = selected.length === storeCheckboxes.length;
+        }
+
         // Cargar datos
         async function loadData() {
             const fromDate = document.getElementById('fromDate').value;
             const toDate = document.getElementById('toDate').value;
-            const storeId = document.getElementById('storeSelect').value;
+            const storeIds = selectedStores.length > 0 ? selectedStores : null;
 
             if (!fromDate || !toDate) {
                 showError('Por favor selecciona fechas válidas');
@@ -514,7 +733,7 @@
             hideMessages();
 
             try {
-                const response = await fetch('/api/stats', {
+                const response = await fetch('/api/stats/enhanced', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -522,7 +741,7 @@
                     body: JSON.stringify({
                         fromDate: fromDate,
                         toDate: toDate,
-                        storeId: storeId ? [storeId] : null
+                        storeIds: storeIds
                     })
                 });
 
@@ -531,6 +750,7 @@
                 if (result.success) {
                     currentStats = result.data;
                     displayStats(result.data);
+                    displayInsights(result.data);
                     showSuccess(`Datos cargados: ${result.data.totalOrders} órdenes, $${result.data.totalRevenue.toLocaleString()} ingresos`);
                 } else {
                     showError('Error cargando datos: ' + result.error);
@@ -542,40 +762,153 @@
             }
         }
 
-        // Sincronizar datos
-        async function syncData() {
+        // Sincronizar tiendas seleccionadas
+        async function syncSelectedStores() {
             const fromDate = document.getElementById('fromDate').value;
             const toDate = document.getElementById('toDate').value;
+            
+            if (!fromDate || !toDate) {
+                showError('Por favor selecciona fechas válidas');
+                return;
+            }
+
+            if (selectedStores.length === 0) {
+                showError('Por favor selecciona al menos una tienda');
+                return;
+            }
 
             showLoading(true);
             hideMessages();
 
             try {
-                const response = await fetch('/api/sync', {
+                const response = await fetch('/api/sync/selected', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        fromDate: fromDate || '2025-01-01',
-                        toDate: toDate || '2025-12-31'
+                        fromDate,
+                        toDate,
+                        storeIds: selectedStores
                     })
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    showSuccess(result.message);
-                    // Recargar datos después de sincronizar
-                    await loadData();
+                    const successful = result.summary.successful;
+                    const total = result.summary.total;
+                    showSuccess(`Sincronización completada: ${successful}/${total} tiendas sincronizadas`);
+                    loadData(); // Recargar datos después de sincronizar
                 } else {
-                    showError('Error sincronizando: ' + result.error);
+                    showError('Error en sincronización: ' + result.error);
                 }
             } catch (error) {
+                console.error('Error:', error);
                 showError('Error de conexión: ' + error.message);
             } finally {
                 showLoading(false);
             }
+        }
+
+        // Autenticar todas las tiendas
+        async function authenticateStores() {
+            showLoading(true);
+            hideMessages();
+
+            try {
+                const response = await fetch('/api/auth/authenticate-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const successful = result.summary.successful;
+                    const total = result.summary.total;
+                    showSuccess(`Autenticación completada: ${successful}/${total} tiendas autenticadas`);
+                    loadAvailableStores(); // Recargar estado de tiendas
+                } else {
+                    showError('Error en autenticación: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Error de conexión: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Mostrar insights adicionales
+        function displayInsights(data) {
+            // Mostrar horarios de mayor venta
+            if (data.hourlyStats) {
+                const hourlyContainer = document.getElementById('hourlyStats');
+                hourlyContainer.innerHTML = data.hourlyStats.map(hour => `
+                    <div class="insight-item">
+                        <span class="insight-label">${hour.hour}:00</span>
+                        <span class="insight-value">${hour.orderCount} órdenes</span>
+                    </div>
+                `).join('');
+            }
+
+            // Mostrar días más rentables
+            if (data.dailyStats) {
+                const dailyContainer = document.getElementById('dailyStats');
+                dailyContainer.innerHTML = data.dailyStats.map(day => `
+                    <div class="insight-item">
+                        <span class="insight-label">${day.dayName}</span>
+                        <span class="insight-value">$${day.totalAmount.toLocaleString()}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Mostrar productos por tienda
+            if (data.topProductsByStore) {
+                const productsContainer = document.getElementById('topProductsByStore');
+                const groupedProducts = data.topProductsByStore.reduce((acc, product) => {
+                    if (!acc[product.storeId]) acc[product.storeId] = [];
+                    acc[product.storeId].push(product);
+                    return acc;
+                }, {});
+
+                productsContainer.innerHTML = Object.entries(groupedProducts).map(([storeId, products]) => {
+                    const store = availableStores.find(s => s.storeId === storeId);
+                    const storeName = store ? store.storeName : `Tienda ${storeId}`;
+                    return `
+                        <div style="margin-bottom: 15px;">
+                            <strong>${storeName}:</strong>
+                            ${products.slice(0, 3).map(p => `
+                                <div class="insight-item">
+                                    <span class="insight-label">${p.productName}</span>
+                                    <span class="insight-value">$${p.totalRevenue.toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Mostrar rendimiento por tienda
+            if (data.storePerformance) {
+                const performanceContainer = document.getElementById('storePerformance');
+                performanceContainer.innerHTML = data.storePerformance.map(store => {
+                    const storeInfo = availableStores.find(s => s.storeId === store.storeId);
+                    const storeName = storeInfo ? storeInfo.storeName : `Tienda ${store.storeId}`;
+                    return `
+                        <div class="insight-item">
+                            <span class="insight-label">${storeName}</span>
+                            <span class="insight-value">$${store.totalRevenue.toLocaleString()}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Mostrar sección de insights
+            document.getElementById('insights').style.display = 'block';
         }
 
         // Mostrar estadísticas
@@ -729,7 +1062,8 @@
 
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
-            loadStores();
+            // Cargar tiendas disponibles
+            loadAvailableStores();
             
             // Establecer fecha de hoy por defecto
             const today = new Date().toISOString().split('T')[0];

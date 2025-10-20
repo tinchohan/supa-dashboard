@@ -1,11 +1,13 @@
 import ApiService from './apiService.js';
 import SqliteService from './sqliteService.js';
+import AuthManager from './authManager.js';
 import { getActiveUsers } from '../config/users.js';
 
 class SqliteSyncService {
   constructor() {
     this.apiService = new ApiService();
     this.dbService = new SqliteService();
+    this.authManager = new AuthManager();
     this.isInitialized = false;
   }
 
@@ -194,6 +196,269 @@ class SqliteSyncService {
     } catch (error) {
       console.error('❌ Error obteniendo estado de sincronización:', error.message);
       return { success: false, error: error.message };
+    }
+  }
+
+  // Sincronizar tiendas seleccionadas
+  async syncSelectedStores(storeIds, fromDate, toDate) {
+    try {
+      console.log(`🔄 Sincronizando tiendas seleccionadas: ${storeIds.join(', ')}`);
+
+      const results = [];
+      
+      for (const storeId of storeIds) {
+        try {
+          // Obtener token para la tienda
+          const tokenResult = await this.authManager.getTokenForStore(storeId);
+          
+          if (!tokenResult.success) {
+            // Intentar renovar token
+            const renewResult = await this.authManager.renewTokenForStore(storeId);
+            if (!renewResult.success) {
+              results.push({
+                storeId,
+                success: false,
+                error: 'No se pudo obtener token válido'
+              });
+              continue;
+            }
+          }
+
+          // Obtener datos de la API para esta tienda
+          const user = getActiveUsers().find(u => u.storeId === storeId);
+          if (!user) {
+            results.push({
+              storeId,
+              success: false,
+              error: 'Usuario no encontrado'
+            });
+            continue;
+          }
+
+          const [ordersResult, productsResult, sessionsResult] = await Promise.all([
+            this.apiService.getSaleOrders(user.email, user.password, fromDate, toDate),
+            this.apiService.getSaleProducts(user.email, user.password, fromDate, toDate),
+            this.apiService.getSessions(user.email, user.password, fromDate, toDate)
+          ]);
+
+          let syncedData = {
+            orders: 0,
+            products: 0,
+            sessions: 0
+          };
+
+          // Sincronizar con la base de datos
+          if (this.isInitialized) {
+            if (ordersResult.success && ordersResult.data) {
+              const ordersSync = await this.dbService.syncSaleOrders(ordersResult.data, user.email);
+              if (ordersSync.success) syncedData.orders = ordersSync.synced;
+            }
+
+            if (productsResult.success && productsResult.data) {
+              const productsSync = await this.dbService.syncSaleProducts(productsResult.data, user.email);
+              if (productsSync.success) syncedData.products = productsSync.synced;
+            }
+
+            if (sessionsResult.success && sessionsResult.data) {
+              const sessionsSync = await this.dbService.syncSessions(sessionsResult.data, user.email);
+              if (sessionsSync.success) syncedData.sessions = sessionsSync.synced;
+            }
+          }
+
+          results.push({
+            storeId,
+            storeName: user.storeName,
+            success: true,
+            synced: syncedData
+          });
+
+        } catch (error) {
+          console.error(`❌ Error sincronizando tienda ${storeId}:`, error.message);
+          results.push({
+            storeId,
+            success: false,
+            error: error.message
+          });
+        }
+      }
+
+      return {
+        success: true,
+        results,
+        summary: {
+          total: storeIds.length,
+          successful: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error sincronizando tiendas seleccionadas:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Autenticar todas las tiendas
+  async authenticateAllStores() {
+    try {
+      return await this.authManager.authenticateAllStores();
+    } catch (error) {
+      console.error('❌ Error autenticando tiendas:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Obtener estado de autenticación
+  async getAuthenticationStatus() {
+    try {
+      return await this.authManager.getAuthenticationStatus();
+    } catch (error) {
+      console.error('❌ Error obteniendo estado de autenticación:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Obtener estadísticas mejoradas con más insights
+  async getEnhancedStats(fromDate, toDate, storeIds = null) {
+    try {
+      let whereClause = 'WHERE order_date BETWEEN ? AND ?';
+      let params = [fromDate, toDate];
+
+      if (storeIds && storeIds.length > 0) {
+        const storeIdsStr = storeIds.map(id => `'${id}'`).join(',');
+        whereClause += ` AND store_id IN (${storeIdsStr})`;
+      }
+
+      // Estadísticas básicas
+      const basicStats = await this.dbService.getStatsFromDB(fromDate, toDate);
+
+      if (!basicStats.success) {
+        return basicStats;
+      }
+
+      // Estadísticas adicionales
+      const additionalStats = await this.getAdditionalInsights(fromDate, toDate, storeIds);
+
+      return {
+        success: true,
+        data: {
+          ...basicStats.data,
+          ...additionalStats
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error obteniendo estadísticas mejoradas:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Obtener insights adicionales
+  async getAdditionalInsights(fromDate, toDate, storeIds = null) {
+    try {
+      let whereClause = 'WHERE order_date BETWEEN ? AND ?';
+      let params = [fromDate, toDate];
+
+      if (storeIds && storeIds.length > 0) {
+        const storeIdsStr = storeIds.map(id => `'${id}'`).join(',');
+        whereClause += ` AND store_id IN (${storeIdsStr})`;
+      }
+
+      // Horarios de mayor venta
+      const hourlyStats = await this.dbService.db.all(`
+        SELECT 
+          strftime('%H', order_date) as hour,
+          COUNT(*) as order_count,
+          SUM(total - COALESCE(discount, 0)) as total_amount
+        FROM sale_orders 
+        ${whereClause}
+        GROUP BY strftime('%H', order_date)
+        ORDER BY order_count DESC
+        LIMIT 5
+      `, params);
+
+      // Días de la semana más rentables
+      const dailyStats = await this.dbService.db.all(`
+        SELECT 
+          CASE strftime('%w', order_date)
+            WHEN '0' THEN 'Domingo'
+            WHEN '1' THEN 'Lunes'
+            WHEN '2' THEN 'Martes'
+            WHEN '3' THEN 'Miércoles'
+            WHEN '4' THEN 'Jueves'
+            WHEN '5' THEN 'Viernes'
+            WHEN '6' THEN 'Sábado'
+          END as day_name,
+          COUNT(*) as order_count,
+          SUM(total - COALESCE(discount, 0)) as total_amount,
+          AVG(total - COALESCE(discount, 0)) as avg_amount
+        FROM sale_orders 
+        ${whereClause}
+        GROUP BY strftime('%w', order_date)
+        ORDER BY total_amount DESC
+      `, params);
+
+      // Productos más rentables por tienda
+      const topProductsByStore = await this.dbService.db.all(`
+        SELECT 
+          sp.store_id,
+          sp.name,
+          COUNT(*) as times_sold,
+          SUM(sp.total) as total_revenue,
+          AVG(sp.price) as avg_price
+        FROM sale_products sp
+        JOIN sale_orders so ON sp.order_id = so.order_id
+        ${whereClause.replace('order_date', 'so.order_date')}
+        GROUP BY sp.store_id, sp.name
+        ORDER BY sp.store_id, total_revenue DESC
+      `, params);
+
+      // Métricas de rendimiento por tienda
+      const storePerformance = await this.dbService.db.all(`
+        SELECT 
+          store_id,
+          COUNT(*) as total_orders,
+          SUM(total - COALESCE(discount, 0)) as total_revenue,
+          AVG(total - COALESCE(discount, 0)) as avg_order_value,
+          MIN(order_date) as first_order,
+          MAX(order_date) as last_order,
+          COUNT(DISTINCT DATE(order_date)) as active_days
+        FROM sale_orders 
+        ${whereClause}
+        GROUP BY store_id
+        ORDER BY total_revenue DESC
+      `, params);
+
+      return {
+        hourlyStats: hourlyStats.map(h => ({
+          hour: h.hour,
+          orderCount: parseInt(h.order_count),
+          totalAmount: parseFloat(h.total_amount)
+        })),
+        dailyStats: dailyStats.map(d => ({
+          dayName: d.day_name,
+          orderCount: parseInt(d.order_count),
+          totalAmount: parseFloat(d.total_amount),
+          avgAmount: parseFloat(d.avg_amount)
+        })),
+        topProductsByStore: topProductsByStore.map(p => ({
+          storeId: p.store_id,
+          productName: p.name,
+          timesSold: parseInt(p.times_sold),
+          totalRevenue: parseFloat(p.total_revenue),
+          avgPrice: parseFloat(p.avg_price)
+        })),
+        storePerformance: storePerformance.map(s => ({
+          storeId: s.store_id,
+          totalOrders: parseInt(s.total_orders),
+          totalRevenue: parseFloat(s.total_revenue),
+          avgOrderValue: parseFloat(s.avg_order_value),
+          firstOrder: s.first_order,
+          lastOrder: s.last_order,
+          activeDays: parseInt(s.active_days)
+        }))
+      };
+    } catch (error) {
+      console.error('❌ Error obteniendo insights adicionales:', error.message);
+      return {};
     }
   }
 
