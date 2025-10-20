@@ -6,12 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "start:sqlite": "node src/server-sqlite.js",
     "dev": "node --watch src/server.js",
-    "dev:sqlite": "node --watch src/server-sqlite.js",
-    "test": "echo \"No tests specified\" && exit 0",
-    "test:sqlite": "node test-sqlite.js",
-    "test:complete": "node test-complete.js"
+    "test": "node test-complete.js"
   },
   "dependencies": {
     "axios": "^1.6.0",

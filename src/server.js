@@ -5,7 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import ApiService from './services/apiService.js';
-import SyncService from './services/syncService.js';
+import SqliteSyncService from './services/sqliteSyncService.js';
+import AiService from './services/aiService.js';
 import { getActiveUsers, getUserByEmail } from './config/users.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,12 +24,13 @@ app.use(express.static('public'));
 
 // Servicios
 const apiService = new ApiService();
-const syncService = new SyncService();
+const syncService = new SqliteSyncService();
+const aiService = new AiService();
 
-// Inicializar servicio de sincronización
+// Inicializar servicio de sincronización con SQLite
 syncService.initialize().then(initialized => {
   if (initialized) {
-    console.log('✅ Servicio de sincronización con MySQL inicializado');
+    console.log('✅ Servicio de sincronización con SQLite inicializado');
   } else {
     console.log('⚠️ Servicio de sincronización no disponible, usando solo API');
   }
@@ -42,7 +44,7 @@ app.get('/api/health', (req, res) => {
     success: true, 
     message: 'Servidor funcionando correctamente',
     timestamp: new Date().toISOString(),
-    mode: 'API Externa con Fallback'
+    mode: 'API Externa con Fallback a SQLite'
   });
 });
 
@@ -411,12 +413,125 @@ app.get('/api/test-api', async (req, res) => {
   }
 });
 
+// Chat con IA
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message, context } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Mensaje requerido' 
+      });
+    }
+
+    console.log('🤖 Procesando consulta de chat:', message.substring(0, 50) + '...');
+    
+    const result = await aiService.generateResponse(message, context);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        response: result.response 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en chat:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Análisis de tendencias con IA
+app.post('/api/ai/analysis', async (req, res) => {
+  try {
+    const { context } = req.body;
+    
+    console.log('📊 Generando análisis de tendencias...');
+    
+    const result = await aiService.analyzeTrends(context);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        analysis: result.response 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en análisis:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Resumen ejecutivo con IA
+app.post('/api/ai/summary', async (req, res) => {
+  try {
+    const { context } = req.body;
+    
+    console.log('📋 Generando resumen ejecutivo...');
+    
+    const result = await aiService.generateExecutiveSummary(context);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        summary: result.response 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en resumen:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Test de conectividad con IA
+app.get('/api/test-ai', async (req, res) => {
+  try {
+    const result = await aiService.testConnection();
+    
+    res.json({
+      success: result.success,
+      message: result.success ? 'IA funcionando correctamente' : result.error,
+      configured: aiService.isConfigured()
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: 'Error probando IA: ' + error.message,
+      configured: aiService.isConfigured()
+    });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
   console.log(`📊 Dashboard disponible en http://localhost:${PORT}`);
   console.log(`🔗 API disponible en http://localhost:${PORT}/api`);
-  console.log(`🌐 Modo: API Externa con Fallback a Datos Demo`);
+  console.log(`🌐 Modo: API Externa con Fallback a SQLite`);
 });
 
 export default app;
